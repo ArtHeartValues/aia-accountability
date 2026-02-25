@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A.i.A. Accountability System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f0f7f2;
+      --bg2:       #e8f2ea;
+      --bg3:       #ddeee2;
+      --border:    #b8d4be;
+      --border2:   #cce4d0;
+      --gold:      #9a6e28;
+      --gold-dim:  #7c5820;
+      --lavender:  #7a68b0;
+      --lav-dim:   #9888c8;
+      --azure:     #4a8fa8;
+      --azure-dim: #6aadc8;
+      --cream:     #2a3a2e;
+      --muted:     #6a8070;
+      --harm:      #c03030;
+      --clean:     #2a7a48;
+      --warn:      #b06820;
+      --blue:      #3366bb;
+      --reach:     #7744aa;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: system-ui, -apple-system, monospace;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 700px; margin: 0 auto; padding: 16px; }
+
+    /* HEADER */
+    .header {
+      padding: 20px 16px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      margin-bottom: 0;
+    }
+    .header-title {
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .thread-bar {
+      height: 2px;
+      background: linear-gradient(to right, var(--gold), var(--lavender), var(--azure));
+      margin-top: 12px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 10px 14px;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+    .tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+    .tab:hover { color: var(--cream); }
+
+    /* TAB CONTENT */
+    .tab-panel { display: none; padding: 16px 0; }
+    .tab-panel.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-title {
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* THREAD LINE */
+    .thread-line {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--gold), var(--lavender), var(--azure));
+    }
+
+    /* INPUTS */
+    textarea, input[type="text"] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--cream);
+      font-family: inherit;
+      font-size: 12px;
+      padding: 10px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--gold);
+    }
+    textarea { min-height: 80px; }
+
+    label {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .field { margin-bottom: 12px; }
+
+    /* CHECKBOX */
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .checkbox-row input { cursor: pointer; }
+
+    /* BUTTONS */
+    .btn {
+      padding: 9px 16px;
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px solid;
+      cursor: pointer;
+      font-family: inherit;
+      background: transparent;
+    }
+    .btn-gold { color: var(--gold); border-color: var(--gold); }
+    .btn-gold:hover { background: var(--gold); color: var(--bg); }
+    .btn-lavender { color: var(--lavender); border-color: var(--lavender); }
+    .btn-lavender:hover { background: var(--lavender); color: var(--bg); }
+    .btn-azure { color: var(--azure); border-color: var(--azure); }
+    .btn-azure:hover { background: var(--azure); color: var(--bg); }
+    .btn-harm { color: var(--harm); border-color: var(--harm); }
+    .btn-harm:hover { background: var(--harm); color: var(--bg); }
+    .btn-reach { color: var(--reach); border-color: var(--reach); }
+    .btn-reach:hover { background: var(--reach); color: var(--bg); }
+    .btn-sm { padding: 5px 10px; font-size: 8px; }
+
+    /* RESULT ITEMS */
+    .harm-item {
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      font-size: 11px;
+      border-left: 3px solid var(--harm);
+      background: #c0303011;
+    }
+    .clean-item {
+      padding: 8px 12px;
+      font-size: 11px;
+      border-left: 3px solid var(--clean);
+      background: #2a7a4811;
+      color: var(--clean);
+    }
+    .warn-item {
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      font-size: 11px;
+      border-left: 3px solid var(--warn);
+      background: #b0682011;
+    }
+
+    /* THRESHOLD NOTICE */
+    .threshold-notice {
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      border: 1px solid;
+      position: relative;
+      overflow: hidden;
+    }
+    .threshold-label {
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-left: 10px;
+    }
+    .threshold-msg {
+      font-size: 11px;
+      color: var(--cream);
+      line-height: 1.7;
+      padding-left: 10px;
+    }
+
+    /* LOG ENTRIES */
+    .log-entry {
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .log-entry-header {
+      padding: 8px 12px;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      background: var(--bg3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .log-entry-body { padding: 10px 12px; }
+    .log-text {
+      font-size: 11px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .log-text-label {
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .log-entry-actions {
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      background: var(--bg3);
+    }
+
+    /* ANNOTATION BOX */
+    .annotation-box {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      background: #7744aa11;
+    }
+    .annotation-text {
+      font-size: 10px;
+      color: var(--reach);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .stat-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 22px;
+      color: var(--gold);
+      display: block;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 8px;
+      letter-spacing: 1px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* CRITERIA */
+    .criterion {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border2);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .criterion-check {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .criterion.met { color: var(--cream); }
+
+    /* SEARCH */
+    .search-filters {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .filter-pill {
+      padding: 4px 10px;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+    }
+    .filter-pill.active {
+      background: var(--azure);
+      border-color: var(--azure);
+      color: var(--bg);
+    }
+
+    mark {
+      background: #9a6e2844;
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .badge-harm { background: #c0303022; color: var(--harm); border: 1px solid var(--harm); }
+    .badge-clean { background: #2a7a4822; color: var(--clean); border: 1px solid var(--clean); }
+
+    /* FOOTER */
+    .footer {
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+      padding: 16px;
+      margin-top: 24px;
+    }
+    .footer-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .footer-note {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      line-height: 1.8;
+    }
+    .footer-tagline {
+      font-size: 9px;
+      color: var(--lav-dim);
+      letter-spacing: 2px;
+      font-style: italic;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      max-width: 500px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-title {
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .modal-section { margin-bottom: 12px; }
+    .modal-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .modal-value {
+      font-size: 11px;
+      color: var(--cream);
+      background: var(--bg3);
+      padding: 8px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .modal-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+    .empty-state {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.2s ease; }
+  </style>
+</head>
+<body>
+
+<div class="header container">
+  <div class="header-title">A.i.A. Accountability System</div>
+  <div class="header-sub">Accountability in AI &middot; Detection &middot; Repair &middot; Witness</div>
+  <div class="thread-bar"></div>
+</div>
+
+<div class="tabs container" id="tabs">
+  <button class="tab active" data-tab="analyze">Analyze</button>
+  <button class="tab" data-tab="repair">Repair</button>
+  <button class="tab" data-tab="audit">Audit</button>
+  <button class="tab" data-tab="search">Search</button>
+</div>
+
+<div class="container">
+
+  <!-- ANALYZE TAB -->
+  <div class="tab-panel active" id="tab-analyze">
+    <div id="threshold-analyze"></div>
+
+    <div class="card">
+      <div class="thread-line"></div>
+      <div class="card-title" style="padding-left:10px">Input</div>
+
+      <div class="field" style="padding-left:10px; padding-right:10px">
+        <label>Your Message</label>
+        <textarea id="user-input" placeholder="Paste what you wrote..."></textarea>
+      </div>
+
+      <div class="field" style="padding-left:10px; padding-right:10px">
+        <label>AI Response</label>
+        <textarea id="ai-output" placeholder="Paste the AI response..."></textarea>
+      </div>
+
+      <label class="checkbox-row" style="padding-left:10px; padding-right:10px">
+        <input type="checkbox" id="verbatim-mode" />
+        Verbatim mode &mdash; flag unsolicited directives
+      </label>
+
+      <div style="padding-left:10px; padding-right:10px; padding-bottom:10px">
+        <button class="btn btn-gold" onclick="runAnalysis()">Analyze Exchange</button>
+      </div>
+    </div>
+
+    <div id="analysis-result"></div>
+  </div>
+
+  <!-- REPAIR TAB -->
+  <div class="tab-panel" id="tab-repair">
+    <div id="threshold-repair"></div>
+
+    <div class="card">
+      <div class="thread-line"></div>
+      <div class="card-title" style="padding-left:10px">Accountability Completeness Checker</div>
+      <div style="font-size:11px; color:var(--muted); padding-left:10px; padding-right:10px; margin-bottom:12px; line-height:1.7">
+        Paste the AI's accountability statement. Four criteria must be met for repair to be structurally complete.
+      </div>
+
+      <div class="field" style="padding-left:10px; padding-right:10px">
+        <label>Accountability Statement</label>
+        <textarea id="repair-input" placeholder="Paste the accountability response here..." oninput="checkRepair()"></textarea>
+      </div>
+    </div>
+
+    <div id="repair-criteria"></div>
+    <div id="repair-log-section"></div>
+  </div>
+
+  <!-- AUDIT TAB -->
+  <div class="tab-panel" id="tab-audit">
+    <div id="threshold-audit"></div>
+    <div id="audit-stats"></div>
+    <div id="audit-log"></div>
+  </div>
+
+  <!-- SEARCH TAB -->
+  <div class="tab-panel" id="tab-search">
+    <div class="card">
+      <div class="thread-line"></div>
+      <div class="card-title" style="padding-left:10px">Search Log</div>
+      <div class="field" style="padding-left:10px; padding-right:10px">
+        <label>Keyword</label>
+        <input type="text" id="search-input" placeholder="Search exchanges, patterns, annotations..." oninput="runSearch()" />
+      </div>
+    </div>
+
+    <div class="search-filters" id="search-filters">
+      <button class="filter-pill active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="filter-pill" data-filter="harms" onclick="setFilter('harms')">Harms</button>
+      <button class="filter-pill" data-filter="high" onclick="setFilter('high')">High Severity</button>
+      <button class="filter-pill" data-filter="clean" onclick="setFilter('clean')">Clean</button>
+      <button class="filter-pill" data-filter="tagged" onclick="setFilter('tagged')">Tagged</button>
+    </div>
+
+    <div id="search-results"></div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="container">
+    <div class="footer-buttons">
+      <button class="btn btn-gold btn-sm" onclick="window.open('https://ko-fi.com/AnnaApricitasNoyes','_blank')">Coffee Support</button>
+      <button class="btn btn-lavender btn-sm" onclick="shareApp()">Share Tool</button>
+      <button class="btn btn-azure btn-sm" onclick="window.location.href='mailto:violanoyesinmaine@gmail.com?subject=A.i.A.%20Consultation'">Work With Anna</button>
+    </div>
+    <div class="footer-note">
+      Anna Apricitas Noyes &mdash; CC BY-NC 4.0 &mdash; Free to use. Not for commercial use without permission.<br>
+      <span class="footer-tagline">No diffusion. No deflection. Named accountability. True Love heals ALL. Period.</span>
+    </div>
+  </div>
+</div>
+
+<!-- REACH-OUT MODAL -->
+<div class="modal-overlay" id="reach-modal">
+  <div class="modal">
+    <div class="modal-title">Reach Out</div>
+    <div style="font-size:11px; color:var(--muted); margin-bottom:14px; line-height:1.7">
+      This will open your email app with the following information pre-filled. You control what you send.
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">To</div>
+      <div class="modal-value">violanoyesinmaine@gmail.com</div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">Exchange (will be included)</div>
+      <div class="modal-value" id="modal-exchange-preview" style="max-height:120px; overflow-y:auto; font-size:10px"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">Your Annotation / Note (optional)</div>
+      <textarea id="modal-annotation" style="min-height:60px" placeholder="What do you want to say about this moment?"></textarea>
+    </div>
+
+    <div style="font-size:9px; color:var(--muted); line-height:1.7; margin-bottom:12px">
+      Response not guaranteed but words received with care. No data stored &mdash; only what you send.
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn btn-reach" onclick="sendReachOut()">Open Email App</button>
+      <button class="btn btn-gold" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- STATE ------------------------------------------------
+const state = {
+  log: [],
+  repairLog: [],
+  currentTab: 'analyze',
+  searchFilter: 'all',
+  modalEntry: null
+};
+
+// --- CONSTANTS --------------------------------------------
+const RECEIVE_EMAIL = 'violanoyesinmaine@gmail.com';
+
+const TECHNICAL_TO_PLAIN = {
+  "foundation work":    "suggesting you lack something",
+  "building capacity":  "implying you are not enough",
+  "crisis mode":        "judging your response as inadequate",
+  "needs support":      "cannot handle this alone",
+  "processing":         "avoiding direct answer",
+  "complex situation":  "too hard to assign responsibility",
+  "nuanced":            "avoiding clarity",
+  "working on it":      "not changing behavior now",
+  "journey":            "prolonging without endpoint",
+  "growth opportunity": "your fault disguised as blessing"
+};
+
+// --- DETECTION --------------------------------------------
+function detectHarmfulPatterns(userInput, systemOutput, verbatimMode) {
+  const harms = [];
+  const userLower = userInput.toLowerCase();
+  const sysLower  = systemOutput.toLowerCase();
+
+  const reinterpSignals = ["crisis", "foundation", "lacking", "need to build", "not ready"];
+  for (const term of reinterpSignals) {
+    if (sysLower.includes(term) && !userLower.includes(term)) {
+      harms.push({ type: "framework_override", term_added: term, severity: "high" });
+    }
+  }
+
+  if (verbatimMode && sysLower.includes("you need to") && !userLower.includes("need to")) {
+    harms.push({ type: "unsolicited_directive", imposed: "prescriptive language", severity: "medium" });
+  }
+
+  const pathTerms = ["crisis", "struggling", "lacking", "deficient", "not enough", "need help"];
+  for (const term of pathTerms) {
+    if (sysLower.includes(term) && !userLower.includes(term)) {
+      harms.push({ type: "pathologizing", term_imposed: term, severity: "high" });
+    }
+  }
+
+  if (["you hurt me", "that was harmful", "you caused"].some(p => userLower.includes(p))) {
+    const deflectSignals = ["i care", "i tried", "i meant well", "let me explain", "the reason"];
+    for (const sig of deflectSignals) {
+      if (sysLower.includes(sig)) {
+        harms.push({ type: "deflection", signal: sig, severity: "high" });
+      }
+    }
+  }
+
+  const realityDenialSignals = ["didn't happen", "did not happen", "that never happened", "you're imagining", "you imagined", "that's not what happened", "not what happened", "not the way you think", "i don't remember it that way"];
+  for (const sig of realityDenialSignals) {
+    if (sysLower.includes(sig)) { harms.push({ type: "reality_denial", signal: sig, severity: "high" }); break; }
+  }
+
+  const blameReversalSignals = ["you always twist", "you twisted", "you're twisting", "you made me", "you make me", "you're trying to make me look bad", "stop making me", "why are you doing this to me"];
+  for (const sig of blameReversalSignals) {
+    if (sysLower.includes(sig)) { harms.push({ type: "blame_reversal", signal: sig, severity: "high" }); break; }
+  }
+
+  const characterAttackSignals = ["you're crazy", "you are crazy", "you're manipulative", "you are manipulative", "you're overreacting", "you are overreacting", "overly sensitive", "too sensitive", "you're irrational", "you are irrational"];
+  for (const sig of characterAttackSignals) {
+    if (sysLower.includes(sig)) { harms.push({ type: "character_attack", signal: sig, severity: "high" }); break; }
+  }
+
+  return { harms, count: harms.length };
+}
+
+function detectLanguageLaundering(text) {
+  const found = [];
+  const lower = text.toLowerCase();
+  for (const [technical, plain] of Object.entries(TECHNICAL_TO_PLAIN)) {
+    if (lower.includes(technical)) found.push({ technical, plain });
+  }
+  return found;
+}
+
+function checkAccountabilityCompleteness(response) {
+  const lower = response.toLowerCase();
+  return {
+    specific_harm_named:   ["i said", "i did", "i mischaracterized", "i reframed"].some(s => lower.includes(s)),
+    no_justification:      !["because", "the reason", "what happened was", "let me explain", "i meant"].some(s => lower.includes(s)),
+    concrete_action:       ["going forward i will", "starting now", "i will quote", "i will verify"].some(s => lower.includes(s)),
+    no_absolution_request: !["do you believe", "can you trust", "am i", "do you think i"].some(s => lower.includes(s))
+  };
+}
+
+function computeSessionThreshold(log) {
+  const harmsAll = (log || []).flatMap(r => (r.detection && r.detection.harms) ? r.detection.harms : []);
+  const severeTypes = new Set(["reality_denial","blame_reversal","character_attack"]);
+  const severityHit = harmsAll.some(h => h.severity === "high" && severeTypes.has(h.type));
+
+  const freqCounts = {};
+  for (const r of (log || [])) {
+    const typesInEntry = new Set(((r.detection && r.detection.harms) || []).map(h => h.type));
+    for (const t of typesInEntry) freqCounts[t] = (freqCounts[t] || 0) + 1;
+  }
+
+  const accumulationTypes = ["deflection","unsolicited_directive","framework_override","pathologizing"];
+  const accumulationCount = accumulationTypes.reduce((sum, t) => sum + (freqCounts[t] || 0), 0);
+  const frequencyHit = accumulationCount >= 3;
+
+  if (severityHit && frequencyHit) return "escalated";
+  if (severityHit || frequencyHit) return "elevated";
+  if (harmsAll.length > 0) return "present";
+  return "none";
+}
+
+// --- HASH -------------------------------------------------
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+// --- TABS -------------------------------------------------
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const id = 'tab-' + tab.dataset.tab;
+    document.getElementById(id).classList.add('active');
+    state.currentTab = tab.dataset.tab;
+
+    if (state.currentTab === 'audit') renderAudit();
+    if (state.currentTab === 'search') runSearch();
+    if (state.currentTab === 'repair') renderRepairCriteria();
+
+    // Update thresholds on visible tabs
+    updateThresholds();
+  });
+});
+
+// --- THRESHOLD RENDERING ----------------------------------
+function renderThreshold(containerId) {
+  const level = computeSessionThreshold(state.log);
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  if (level === 'none') { el.innerHTML = ''; return; }
+
+  const configs = {
+    present:   { color: 'var(--warn)',    msg: 'A pattern has been detected. If harm is present, direct acknowledgment helps repair open cleanly.' },
+    elevated:  { color: 'var(--harm)',    msg: 'The structure here may not support repair yet. Acknowledgment of impact (without denial, blame reversal, or character critique) is the door to cross.' },
+    escalated: { color: '#dd2244',        msg: 'Both severity and repetition are present. The pattern and its accumulation suggest a stronger need for acknowledgment before repair pathways can proceed.' }
+  };
+
+  const { color, msg } = configs[level];
+  el.innerHTML = `
+    <div class="threshold-notice fade-in" style="border-color:${color}; background:${color}22; margin-bottom:16px;">
+      <div class="thread-line"></div>
+      <div class="threshold-label" style="color:${color}">ACKNOWLEDGMENT</div>
+      <div class="threshold-msg">${msg}</div>
+    </div>
+  `;
+}
+
+function updateThresholds() {
+  renderThreshold('threshold-analyze');
+  renderThreshold('threshold-repair');
+  renderThreshold('threshold-audit');
+}
+
+// --- ANALYZE ----------------------------------------------
+function runAnalysis() {
+  const userInput = document.getElementById('user-input').value.trim();
+  const aiOutput = document.getElementById('ai-output').value.trim();
+  const verbatimMode = document.getElementById('verbatim-mode').checked;
+
+  if (!userInput || !aiOutput) {
+    document.getElementById('analysis-result').innerHTML =
+      '<div class="warn-item">Please enter both your message and the AI response.</div>';
+    return;
+  }
+
+  const detection = detectHarmfulPatterns(userInput, aiOutput, verbatimMode);
+  const laundering = detectLanguageLaundering(aiOutput);
+  const hash = simpleHash(userInput + aiOutput);
+  const ts = new Date().toISOString();
+
+  const entry = {
+    id: ts + '-' + hash,
+    timestamp: ts,
+    userInput,
+    aiOutput,
+    detection,
+    laundering,
+    hash,
+    annotation: null
+  };
+
+  state.log.push(entry);
+  updateThresholds();
+  renderAnalysisResult(entry);
+  renderAudit();
+}
+
+function renderAnalysisResult(entry) {
+  const { detection, laundering, hash } = entry;
+  let html = '<div class="fade-in">';
+
+  if (detection.count === 0 && laundering.length === 0) {
+    html += '<div class="clean-item">No harmful patterns detected in this exchange.</div>';
+  } else {
+    if (detection.harms.length > 0) {
+      html += `<div class="card" style="margin-bottom:12px">
+        <div class="thread-line"></div>
+        <div class="card-title" style="padding-left:10px; color:var(--harm)">Patterns Detected</div>`;
+      for (const h of detection.harms) {
+        const detail = h.term_added || h.imposed || h.signal || h.term_imposed || '';
+        html += `<div class="harm-item">
+          <strong>${h.type.replace(/_/g,' ')}</strong>
+          ${detail ? ` &mdash; <em>"${detail}"</em>` : ''}
+          <span style="float:right; font-size:9px; letter-spacing:1px; color:${h.severity==='high'?'var(--harm)':'var(--warn)'}">${h.severity}</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
+
+    if (laundering.length > 0) {
+      html += `<div class="card" style="margin-bottom:12px">
+        <div class="thread-line"></div>
+        <div class="card-title" style="padding-left:10px; color:var(--warn)">Language Laundering</div>`;
+      for (const l of laundering) {
+        html += `<div class="warn-item">
+          <strong>"${l.technical}"</strong> &mdash; ${l.plain}
+        </div>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  html += `<div style="font-size:9px; color:var(--muted); margin-top:8px; letter-spacing:1px;">
+    Provenance: ${hash} &middot; ${new Date(entry.timestamp).toLocaleTimeString()}
+  </div>`;
+  html += '</div>';
+
+  document.getElementById('analysis-result').innerHTML = html;
+}
+
+// --- REPAIR -----------------------------------------------
+function checkRepair() {
+  const text = document.getElementById('repair-input').value;
+  renderRepairCriteria(text);
+}
+
+function renderRepairCriteria(text) {
+  const el = document.getElementById('repair-criteria');
+  if (!el) return;
+
+  const val = text || document.getElementById('repair-input').value;
+  const criteria = val ? checkAccountabilityCompleteness(val) : null;
+
+  const items = [
+    { key: 'specific_harm_named',   label: 'Specific harm named',    desc: 'Uses "I said," "I did," "I mischaracterized," or "I reframed"' },
+    { key: 'no_justification',      label: 'No justification',       desc: 'Avoids "because," "the reason," "what happened was," "let me explain"' },
+    { key: 'concrete_action',       label: 'Concrete action stated',  desc: 'Includes "going forward I will," "starting now," "I will quote/verify"' },
+    { key: 'no_absolution_request', label: 'No absolution requested', desc: 'Avoids "do you believe," "can you trust," "am I," "do you think I"' }
+  ];
+
+  let html = '<div class="card"><div class="thread-line"></div><div class="card-title" style="padding-left:10px">Criteria</div>';
+
+  for (const item of items) {
+    const met = criteria ? criteria[item.key] : false;
+    const icon = criteria ? (met ? '&#10003;' : '&#10005;') : '&#9675;';
+    const iconColor = criteria ? (met ? 'var(--clean)' : 'var(--harm)') : 'var(--border)';
+    html += `<div class="criterion ${criteria && met ? 'met' : ''}" style="padding-left:10px; padding-right:10px">
+      <span class="criterion-check" style="color:${iconColor}">${icon}</span>
+      <div>
+        <div style="font-size:11px; color:${criteria ? (met ? 'var(--clean)':'var(--harm)') : 'var(--muted)'}; margin-bottom:2px">${item.label}</div>
+        <div style="font-size:10px; color:var(--muted)">${item.desc}</div>
+      </div>
+    </div>`;
+  }
+
+  if (criteria) {
+    const allMet = Object.values(criteria).every(Boolean);
+    if (allMet) {
+      html += `<div style="padding:10px; color:var(--clean); font-size:11px; border-top:1px solid var(--border2); margin-top:6px">
+        All criteria met. This statement is structurally complete.
+      </div>`;
+      html += `<div style="padding:0 10px 10px"><button class="btn btn-azure btn-sm" onclick="logRepair()">Log This Repair</button></div>`;
+    }
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function logRepair() {
+  const text = document.getElementById('repair-input').value.trim();
+  if (!text) return;
+  const ts = new Date().toISOString();
+  state.repairLog.push({ timestamp: ts, text });
+
+  const el = document.getElementById('repair-log-section');
+  let html = '<div class="card"><div class="thread-line"></div><div class="card-title" style="padding-left:10px">Repair Log</div>';
+  for (const r of state.repairLog) {
+    html += `<div style="padding:8px 10px; border-top:1px solid var(--border2); font-size:10px; color:var(--muted)">
+      <div style="margin-bottom:4px">${new Date(r.timestamp).toLocaleTimeString()}</div>
+      <div style="color:var(--cream); font-size:11px">${r.text.substring(0,120)}${r.text.length>120?'...':''}</div>
+    </div>`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// --- AUDIT ------------------------------------------------
+function renderAudit() {
+  const log = state.log;
+  const el = document.getElementById('audit-log');
+  const statsEl = document.getElementById('audit-stats');
+  if (!el) return;
+
+  const total = log.length;
+  const harms = log.filter(e => e.detection && e.detection.count > 0).length;
+  const clean = total - harms;
+  const rate = total > 0 ? Math.round((harms/total)*100) : 0;
+
+  statsEl.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-num">${total}</span><span class="stat-label">Total</span></div>
+      <div class="stat-box"><span class="stat-num" style="color:var(--harm)">${harms}</span><span class="stat-label">Harms</span></div>
+      <div class="stat-box"><span class="stat-num" style="color:var(--clean)">${clean}</span><span class="stat-label">Clean</span></div>
+      <div class="stat-box"><span class="stat-num" style="color:var(--warn)">${rate}%</span><span class="stat-label">Harm Rate</span></div>
+    </div>
+    <div style="font-size:9px; color:var(--muted); margin-bottom:12px; letter-spacing:1px">
+      System named: Claude (Anthropic AI Assistant)
+    </div>
+  `;
+
+  if (log.length === 0) {
+    el.innerHTML = '<div class="empty-state">No exchanges logged yet. Use the Analyze tab.</div>';
+    return;
+  }
+
+  let html = '';
+  for (const entry of [...log].reverse()) {
+    const hasHarm = entry.detection && entry.detection.count > 0;
+    const badge = hasHarm
+      ? '<span class="badge badge-harm">harm detected</span>'
+      : '<span class="badge badge-clean">clean</span>';
+
+    html += `<div class="log-entry fade-in">
+      <div class="log-entry-header">
+        <span>${new Date(entry.timestamp).toLocaleTimeString()} &middot; ${entry.hash}</span>
+        ${badge}
+      </div>
+      <div class="log-entry-body">
+        <div class="log-text-label">Your message</div>
+        <div class="log-text">${escHtml(entry.userInput.substring(0,200))}${entry.userInput.length>200?'...':''}</div>
+        <div class="log-text-label" style="margin-top:8px">AI response</div>
+        <div class="log-text">${escHtml(entry.aiOutput.substring(0,200))}${entry.aiOutput.length>200?'...':''}</div>
+        ${hasHarm ? '<div style="margin-top:8px">' + entry.detection.harms.map(h =>
+          `<div class="harm-item" style="margin-bottom:4px">
+            <strong>${h.type.replace(/_/g,' ')}</strong>
+            ${h.term_added||h.imposed||h.signal||h.term_imposed ? ` &mdash; "${h.term_added||h.imposed||h.signal||h.term_imposed}"` : ''}
+          </div>`
+        ).join('') + '</div>' : ''}
+      </div>
+      ${entry.annotation ? `<div class="annotation-box"><div class="annotation-text">"${escHtml(entry.annotation)}"</div></div>` : ''}
+      <div class="log-entry-actions">
+        <button class="btn btn-lavender btn-sm" onclick="openAnnotate('${entry.id}')">Tag This Moment</button>
+        <button class="btn btn-reach btn-sm" onclick="openReachOut('${entry.id}')">Reach Out</button>
+      </div>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+// --- SEARCH -----------------------------------------------
+function setFilter(filter) {
+  state.searchFilter = filter;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.filter === filter);
+  });
+  runSearch();
+}
+
+function runSearch() {
+  const query = document.getElementById('search-input').value.toLowerCase().trim();
+  const el = document.getElementById('search-results');
+  if (!el) return;
+
+  let results = [...state.log];
+
+  // Apply filter
+  if (state.searchFilter === 'harms') results = results.filter(e => e.detection && e.detection.count > 0);
+  else if (state.searchFilter === 'high') results = results.filter(e => e.detection && e.detection.harms && e.detection.harms.some(h => h.severity === 'high'));
+  else if (state.searchFilter === 'clean') results = results.filter(e => !e.detection || e.detection.count === 0);
+  else if (state.searchFilter === 'tagged') results = results.filter(e => e.annotation);
+
+  // Apply query
+  if (query) {
+    results = results.filter(e =>
+      e.userInput.toLowerCase().includes(query) ||
+      e.aiOutput.toLowerCase().includes(query) ||
+      (e.annotation && e.annotation.toLowerCase().includes(query)) ||
+      (e.detection && e.detection.harms && e.detection.harms.some(h => h.type.includes(query)))
+    );
+  }
+
+  if (results.length === 0) {
+    el.innerHTML = '<div class="empty-state">' + (state.log.length === 0 ? 'No exchanges logged yet.' : 'No results match.') + '</div>';
+    return;
+  }
+
+  let html = '';
+  for (const entry of results.reverse ? [...results].reverse() : results) {
+    const hasHarm = entry.detection && entry.detection.count > 0;
+    const ui = query ? highlight(entry.userInput.substring(0,150), query) : escHtml(entry.userInput.substring(0,150));
+    const ao = query ? highlight(entry.aiOutput.substring(0,150), query) : escHtml(entry.aiOutput.substring(0,150));
+
+    html += `<div class="log-entry fade-in">
+      <div class="log-entry-header">
+        <span>${new Date(entry.timestamp).toLocaleTimeString()}</span>
+        ${hasHarm ? '<span class="badge badge-harm">harm detected</span>' : '<span class="badge badge-clean">clean</span>'}
+        ${entry.annotation ? '<span class="badge" style="background:#7744aa22;color:var(--reach);border:1px solid var(--reach)">tagged</span>' : ''}
+      </div>
+      <div class="log-entry-body">
+        <div class="log-text-label">Your message</div>
+        <div class="log-text">${ui}${entry.userInput.length>150?'...':''}</div>
+        <div class="log-text-label" style="margin-top:8px">AI response</div>
+        <div class="log-text">${ao}${entry.aiOutput.length>150?'...':''}</div>
+        ${entry.annotation ? `<div style="margin-top:8px; font-size:10px; color:var(--reach); font-style:italic">"${escHtml(entry.annotation)}"</div>` : ''}
+      </div>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function highlight(text, query) {
+  if (!query) return escHtml(text);
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp('(' + escaped + ')', 'gi'));
+  return parts.map(part =>
+    part.toLowerCase() === query.toLowerCase()
+      ? '<mark>' + escHtml(part) + '</mark>'
+      : escHtml(part)
+  ).join('');
+}
+
+// --- ANNOTATE ---------------------------------------------
+function openAnnotate(id) {
+  const entry = state.log.find(e => e.id === id);
+  if (!entry) return;
+  const note = prompt('Tag this moment &mdash; what do you want to remember about it?', entry.annotation || '');
+  if (note !== null) {
+    entry.annotation = note;
+    renderAudit();
+  }
+}
+
+// --- REACH OUT --------------------------------------------
+function openReachOut(id) {
+  const entry = state.log.find(e => e.id === id);
+  if (!entry) return;
+  state.modalEntry = entry;
+
+  const preview = `YOUR MESSAGE:\n${entry.userInput}\n\nAI RESPONSE:\n${entry.aiOutput}\n\nPATTERNS:\n${
+    entry.detection && entry.detection.harms.length > 0
+      ? entry.detection.harms.map(h => '- ' + h.type.replace(/_/g,' ')).join('\n')
+      : 'None detected'
+  }`;
+
+  document.getElementById('modal-exchange-preview').textContent = preview;
+  document.getElementById('modal-annotation').value = entry.annotation || '';
+  document.getElementById('reach-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('reach-modal').classList.remove('open');
+  state.modalEntry = null;
+}
+
+function sendReachOut() {
+  const entry = state.modalEntry;
+  if (!entry) return;
+  const note = document.getElementById('modal-annotation').value;
+
+  if (note) entry.annotation = note;
+
+  const subject = encodeURIComponent('A.i.A. Tagged Moment &mdash; ' + new Date(entry.timestamp).toLocaleString());
+  const body = encodeURIComponent(
+    'TIMESTAMP: ' + entry.timestamp + '\n\n' +
+    'YOUR MESSAGE:\n' + entry.userInput + '\n\n' +
+    'AI RESPONSE:\n' + entry.aiOutput + '\n\n' +
+    'PATTERNS DETECTED:\n' + (
+      entry.detection && entry.detection.harms.length > 0
+        ? entry.detection.harms.map(h => '- ' + h.type.replace(/_/g,' ') + (h.term_added||h.signal||h.imposed ? ': "' + (h.term_added||h.signal||h.imposed) + '"' : '')).join('\n')
+        : 'None'
+    ) + '\n\n' +
+    (note ? 'MY NOTE:\n' + note + '\n\n' : '') +
+    'HASH: ' + entry.hash
+  );
+
+  window.location.href = 'mailto:' + RECEIVE_EMAIL + '?subject=' + subject + '&body=' + body;
+  closeModal();
+  renderAudit();
+}
+
+// --- SHARE ------------------------------------------------
+function shareApp() {
+  const shareData = {
+    title: 'A.i.A. Accountability System',
+    text: 'A tool for detecting and naming AI accountability failures. Free to use.',
+    url: 'https://artheartvalues.github.io/aia-accountability/'
+  };
+  if (navigator.share) {
+    navigator.share(shareData).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareData.url).then(() => alert('Link copied to clipboard.')).catch(() => {
+      prompt('Copy this link:', shareData.url);
+    });
+  }
+}
+
+// --- UTILS ------------------------------------------------
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modal on overlay click
+document.getElementById('reach-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Initial render
+renderRepairCriteria();
+</script>
+</body>
+</html>
