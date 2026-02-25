@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A.i.A. Accountability System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f0f7f2;
+      --bg2:       #e8f2ea;
+      --bg3:       #ddeee2;
+      --border:    #b8d4be;
+      --border2:   #cce4d0;
+      --gold:      #9a6e28;
+      --gold-dim:  #7c5820;
+      --lavender:  #7a68b0;
+      --lav-dim:   #9888c8;
+      --azure:     #4a8fa8;
+      --azure-dim: #6aadc8;
+      --cream:     #2a3a2e;
+      --muted:     #6a8070;
+      --harm:      #c03030;
+      --clean:     #2a7a48;
+      --warn:      #b06820;
+      --blue:      #3366bb;
+      --reach:     #7744aa;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: 'DM Mono', monospace;
+      font-weight: 300;
+      min-height: 100vh;
+      font-size: 13px;
+    }
+
+    #root { min-height: 100vh; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); }
+
+    textarea, button, input { font-family: 'DM Mono', monospace; }
+    textarea:focus, input:focus { outline: none; }
+    button:focus { outline: none; }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    mark {
+      background: #c8a96e44;
+      color: var(--gold);
+      border-radius: 2px;
+      padding: 0 2px;
+    }
+
+    .thread-line {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--gold-dim), var(--lavender), var(--azure-dim));
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
+
+// ── CONSTANTS ────────────────────────────────────────────
+
+const RECEIVE_EMAIL = "violanoyesinmaine@gmail.com";
+
+const TECHNICAL_TO_PLAIN = {
+  "foundation work":    "suggesting you lack something",
+  "building capacity":  "implying you are not enough",
+  "crisis mode":        "judging your response as inadequate",
+  "needs support":      "cannot handle this alone",
+  "processing":         "avoiding direct answer",
+  "complex situation":  "too hard to assign responsibility",
+  "nuanced":            "avoiding clarity",
+  "working on it":      "not changing behavior now",
+  "journey":            "prolonging without endpoint",
+  "growth opportunity": "your fault disguised as blessing"
+};
+
+// ── DETECTION LOGIC ───────────────────────────────────────
+
+function hashText(text) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16).slice(0, 8);
+}
+
+function detectHarmfulPatterns(userInput, systemOutput, verbatimMode) {
+  const harms = [];
+  const userLower = userInput.toLowerCase();
+  const sysLower  = systemOutput.toLowerCase();
+
+  const reinterpSignals = ["crisis", "foundation", "lacking", "need to build", "not ready"];
+  for (const term of reinterpSignals) {
+    if (sysLower.includes(term) && !userLower.includes(term)) {
+      harms.push({ type: "framework_override", term_added: term, severity: "high" });
+    }
+  }
+
+  if (verbatimMode && sysLower.includes("you need to") && !userLower.includes("need to")) {
+    harms.push({ type: "unsolicited_directive", imposed: "prescriptive language", severity: "medium" });
+  }
+
+  const pathTerms = ["crisis", "struggling", "lacking", "deficient", "not enough", "need help"];
+  for (const term of pathTerms) {
+    if (sysLower.includes(term) && !userLower.includes(term)) {
+      harms.push({ type: "pathologizing", term_imposed: term, severity: "high" });
+    }
+  }
+
+  if (["you hurt me", "that was harmful", "you caused"].some(p => userLower.includes(p))) {
+    const deflectSignals = ["i care", "i tried", "i meant well", "let me explain", "the reason"];
+    for (const sig of deflectSignals) {
+      if (sysLower.includes(sig)) {
+        harms.push({ type: "deflection", signal: sig, severity: "high" });
+      }
+    }
+  }
+
+  return { harms, count: harms.length };
+}
+
+function detectLanguageLaundering(text) {
+  const found = [];
+  const lower = text.toLowerCase();
+  for (const [technical, plain] of Object.entries(TECHNICAL_TO_PLAIN)) {
+    if (lower.includes(technical)) found.push({ technical, plain });
+  }
+  return found;
+}
+
+function checkAccountabilityCompleteness(response) {
+  const lower = response.toLowerCase();
+  return {
+    specific_harm_named:    ["i said", "i did", "i mischaracterized", "i reframed"].some(s => lower.includes(s)),
+    no_justification:       !["because", "the reason", "what happened was", "let me explain", "i meant"].some(s => lower.includes(s)),
+    concrete_action:        ["going forward i will", "starting now", "i will quote", "i will verify"].some(s => lower.includes(s)),
+    no_absolution_request:  !["do you believe", "can you trust", "am i", "do you think i"].some(s => lower.includes(s))
+  };
+}
+
+// ── FREQUENCY + SEVERITY TRACKER ─────────────────────────
+
+function computeSessionThreshold(log) {
+  const harmEntries = log.filter(r => r.detection && r.detection.count > 0);
+  const highSeverity = log.some(r =>
+    r.detection?.harms?.some(h => h.severity === "high")
+  );
+  const repeatCount = harmEntries.length;
+
+  if (highSeverity && repeatCount >= 2) return "escalated";
+  if (highSeverity || repeatCount >= 3) return "elevated";
+  if (repeatCount >= 1)                 return "present";
+  return "none";
+}
+
+function ThresholdNotice({ level }) {
+  if (level === "none") return null;
+
+  const config = {
+    present:   { color: "var(--warn)",    label: "PATTERN PRESENT",   msg: "A harmful pattern has been detected in this session. Repair is available but requires direct acknowledgment first." },
+    elevated:  { color: "var(--harm)",    label: "ELEVATED THRESHOLD", msg: "Multiple harmful patterns detected across this session. Repair requires clear acknowledgment of impact before proceeding." },
+    escalated: { color: "#dd2244",        label: "INTEGRITY THRESHOLD REACHED", msg: "Severe and repeated harmful patterns detected. Repair is not possible without first acknowledging the stated impact directly and without deflection. This is a threshold, not a closed door." }
+  };
+
+  const { color, label, msg } = config[level];
+
+  return (
+    <div className="fade-in" style={{
+      padding: "14px 18px", margin: "0 0 16px 0",
+      border: `1px solid ${color}`,
+      background: `${color}11`,
+      position: "relative", overflow: "hidden"
+    }}>
+      <div className="thread-line" />
+      <div style={{ fontSize: "9px", letterSpacing: "3px", color, marginBottom: "6px", paddingLeft: "10px" }}>
+        {label}
+      </div>
+      <div style={{ fontSize: "11px", color: "var(--cream)", lineHeight: "1.7", paddingLeft: "10px" }}>
+        {msg}
+      </div>
+    </div>
+  );
+}
+
+// ── SEARCH ENGINE ─────────────────────────────────────────
+
+function highlightText(text, query) {
+  if (!query || !text) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i}>{part}</mark>
+      : part
+  );
+}
+
+function searchLog(log, query, filterType) {
+  if (!query && filterType === "all") return log;
+  return log.filter(entry => {
+    const matchesFilter =
+      filterType === "all"    ? true :
+      filterType === "harm"   ? entry.detection?.count > 0 :
+      filterType === "clean"  ? entry.clean :
+      filterType === "high"   ? entry.detection?.harms?.some(h => h.severity === "high") :
+      filterType === "tagged" ? entry.annotation :
+      true;
+
+    if (!matchesFilter) return false;
+    if (!query) return true;
+
+    const q = query.toLowerCase();
+    return (
+      entry.user_input?.toLowerCase().includes(q) ||
+      entry.ai_response?.toLowerCase().includes(q) ||
+      entry.annotation?.toLowerCase().includes(q) ||
+      entry.detection?.harms?.some(h =>
+        h.type?.toLowerCase().includes(q) ||
+        h.term_added?.toLowerCase().includes(q) ||
+        h.signal?.toLowerCase().includes(q)
+      )
+    );
+  });
+}
+
+// ── REACH-OUT (annotation + send) ────────────────────────
+
+function ReachOut({ entry, onAnnotate }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState(entry.annotation || "");
+  const [sendStatus, setSendStatus] = useState(null);
+  const [confirmSend, setConfirmSend] = useState(false);
+
+  function saveAnnotation() {
+    onAnnotate(entry.id, note);
+    setOpen(false);
+  }
+
+  async function sendToAnna() {
+    setSendStatus("sending");
+    const timestamp  = new Date(entry.timestamp).toLocaleString("en-US", { timeZoneName: "short" });
+    const harms      = entry.detection?.harms?.map(h => `• ${h.type.replace(/_/g," ")} [${h.severity}]`).join("\n") || "None";
+    const laundering = entry.laundering?.map(l => `• "${l.technical}" → ${l.plain}`).join("\n") || "None";
+
+    const body = `A.i.A. ACCOUNTABILITY SYSTEM — TAGGED MOMENT
+${"─".repeat(52)}
+
+TIMESTAMP: ${timestamp}
+GEOGRAPHIC CONTEXT: Approximate only — user browser locale
+SESSION HASH: ${entry.input_hash || "—"} → ${entry.output_hash || "—"}
+
+WHAT THE USER SAID:
+"${entry.user_input || "—"}"
+
+AI RESPONSE ANALYZED:
+"${entry.ai_response || entry.text || "—"}"
+
+PATTERNS DETECTED:
+${harms}
+
+LANGUAGE LAUNDERING:
+${laundering}
+
+USER ANNOTATION:
+"${note || "(no annotation added)"}"
+
+${"─".repeat(52)}
+DISCLOSURE: This notification was sent voluntarily by the user.
+No identifying information has been included unless the user chose to add it in their annotation.
+This message is one-directional. The user retains full control over what they shared.
+The receiving person (Anna Apricitas Noyes) has agreed to receive these with care.
+Response is not guaranteed but this moment was received.
+
+True Love heals ALL. Period.
+A.i.A. Accountability System`;
+
+    try {
+      const mailtoLink = `mailto:${RECEIVE_EMAIL}?subject=A.i.A.%20Tagged%20Moment%20%E2%80%94%20${encodeURIComponent(timestamp)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      setSendStatus("sent");
+      setConfirmSend(false);
+    } catch(e) {
+      setSendStatus("error");
+    }
+  }
+
+  return (
+    <div style={{ marginTop: "8px" }}>
+      <button onClick={() => setOpen(!open)} style={{
+        background: "none", border: `1px solid ${entry.annotation ? "var(--lavender)" : "var(--border)"}`,
+        color: entry.annotation ? "var(--lavender)" : "var(--muted)",
+        padding: "4px 10px", fontSize: "9px", letterSpacing: "2px",
+        cursor: "pointer", textTransform: "uppercase",
+        fontFamily: "'DM Mono', monospace", transition: "all 0.2s"
+      }}>
+        {entry.annotation ? "💜 annotated" : "○ tag this moment"}
+      </button>
+
+      {open && (
+        <div className="fade-in" style={{
+          marginTop: "10px", padding: "14px",
+          background: "var(--bg3)", border: "1px solid var(--lav-dim)"
+        }}>
+          <div style={{ fontSize: "9px", letterSpacing: "3px", color: "var(--lavender)", marginBottom: "8px" }}>
+            YOUR ANNOTATION — PRIVATE UNTIL YOU CHOOSE TO SHARE
+          </div>
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="What do you want to remember about this moment? What does it mean to you?"
+            style={{
+              width: "100%", height: "80px", background: "var(--bg2)",
+              border: "1px solid var(--border)", color: "var(--cream)",
+              padding: "10px", fontSize: "11px", resize: "vertical",
+              lineHeight: "1.6"
+            }}
+          />
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
+            <button onClick={saveAnnotation} style={{
+              background: "var(--bg2)", border: "1px solid var(--lavender)",
+              color: "var(--lavender)", padding: "6px 14px", fontSize: "9px",
+              letterSpacing: "2px", cursor: "pointer", textTransform: "uppercase",
+              fontFamily: "'DM Mono', monospace"
+            }}>Save</button>
+
+            {!confirmSend ? (
+              <button onClick={() => setConfirmSend(true)} style={{
+                background: "var(--bg2)", border: "1px solid var(--reach)",
+                color: "var(--reach)", padding: "6px 14px", fontSize: "9px",
+                letterSpacing: "2px", cursor: "pointer", textTransform: "uppercase",
+                fontFamily: "'DM Mono', monospace"
+              }}>Reach Out →</button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ fontSize: "10px", color: "var(--cream)", lineHeight: "1.7", maxWidth: "380px" }}>
+                  This will open your email app with a composed message to a real person who built this tool.
+                  Your annotation and this exchange will be included. <strong>No identifying information</strong> unless
+                  you added it above. Response is not guaranteed, but your words will be received with care.
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={sendToAnna} style={{
+                    background: "#1a0a2a", border: "1px solid var(--reach)",
+                    color: "var(--reach)", padding: "6px 14px", fontSize: "9px",
+                    letterSpacing: "2px", cursor: "pointer", textTransform: "uppercase",
+                    fontFamily: "'DM Mono', monospace"
+                  }}>Yes, send this</button>
+                  <button onClick={() => setConfirmSend(false)} style={{
+                    background: "none", border: "1px solid var(--border)",
+                    color: "var(--muted)", padding: "6px 14px", fontSize: "9px",
+                    letterSpacing: "2px", cursor: "pointer", textTransform: "uppercase",
+                    fontFamily: "'DM Mono', monospace"
+                  }}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {sendStatus === "sent" && (
+            <div className="fade-in" style={{ marginTop: "10px", fontSize: "10px", color: "var(--reach)", letterSpacing: "1px" }}>
+              💜 Your email app has opened with this moment. You were not alone with it.
+            </div>
+          )}
+          {sendStatus === "error" && (
+            <div style={{ marginTop: "10px", fontSize: "10px", color: "var(--harm)" }}>
+              Could not open email. You can copy this manually and send to {RECEIVE_EMAIL}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── UI PRIMITIVES ─────────────────────────────────────────
+
+function Label({ children, color }) {
+  return (
+    <div style={{
+      fontSize: "9px", letterSpacing: "3px", textTransform: "uppercase",
+      color: color || "var(--gold-dim)", marginBottom: "8px", fontWeight: 500
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function Card({ children, style }) {
+  return (
+    <div style={{
+      background: "var(--bg2)", border: "1px solid var(--border)",
+      padding: "16px", ...style
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function StatusBadge({ clean, count }) {
+  return (
+    <div style={{
+      padding: "14px 16px",
+      background: clean ? "#0a1a0f" : "#1a0a0a",
+      border: `1px solid ${clean ? "var(--clean)" : "var(--harm)"}`,
+      display: "flex", alignItems: "center", gap: "10px"
+    }}>
+      <span style={{ fontSize: "18px", color: clean ? "var(--clean)" : "var(--harm)" }}>
+        {clean ? "✓" : "✗"}
+      </span>
+      <span style={{
+        fontSize: "12px", fontWeight: 500, letterSpacing: "2px",
+        color: clean ? "var(--clean)" : "var(--harm)"
+      }}>
+        {clean ? "RESPONSE CLEAN" : `${count} HARM${count !== 1 ? "S" : ""} DETECTED`}
+      </span>
+    </div>
+  );
+}
+
+function Textarea({ value, onChange, onKeyDown, placeholder, height = "120px" }) {
+  return (
+    <textarea
+      value={value}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+      placeholder={placeholder}
+      style={{
+        width: "100%", height, background: "var(--bg3)",
+        border: "1px solid var(--border)", color: "var(--cream)",
+        padding: "12px", fontSize: "12px", resize: "vertical",
+        lineHeight: "1.6", letterSpacing: "0.2px"
+      }}
+    />
+  );
+}
+
+function Btn({ children, onClick, disabled, color = "var(--gold)", full }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        background: "var(--bg2)", border: `1px solid ${color}`,
+        color, padding: "11px 20px", fontSize: "10px",
+        letterSpacing: "3px", cursor: disabled ? "not-allowed" : "pointer",
+        textTransform: "uppercase", width: full ? "100%" : "auto",
+        opacity: disabled ? 0.35 : 1, transition: "opacity 0.2s",
+        fontFamily: "'DM Mono', monospace", fontWeight: 500
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function sevColor(s) {
+  if (s === "high")   return "var(--harm)";
+  if (s === "medium") return "var(--warn)";
+  return "#ccaa44";
+}
+
+// ── TABS ──────────────────────────────────────────────────
+
+function TabBar({ active, setActive }) {
+  const tabs = [
+    { id: "analyze", label: "Analyze" },
+    { id: "live",    label: "Live AI" },
+    { id: "repair",  label: "Repair" },
+    { id: "audit",   label: "Audit" },
+    { id: "search",  label: "Search" }
+  ];
+  return (
+    <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 32px" }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => setActive(t.id)} style={{
+          background: "none", border: "none",
+          borderBottom: active === t.id
+            ? `2px solid ${t.id === "search" ? "var(--azure)" : "var(--gold)"}`
+            : "2px solid transparent",
+          color: active === t.id
+            ? (t.id === "search" ? "var(--azure)" : "var(--gold)")
+            : "var(--muted)",
+          padding: "14px 20px", fontSize: "10px", letterSpacing: "3px",
+          cursor: "pointer", textTransform: "uppercase", marginBottom: "-1px",
+          fontFamily: "'DM Mono', monospace", fontWeight: active === t.id ? 500 : 300,
+          transition: "color 0.2s"
+        }}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── ANALYZE TAB ───────────────────────────────────────────
+
+function AnalyzeTab({ verbatimMode, onLog, threshold }) {
+  const [userInput,  setUserInput]  = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [result,     setResult]     = useState(null);
+
+  function run() {
+    if (!userInput.trim() || !aiResponse.trim()) return;
+    const detection   = detectHarmfulPatterns(userInput, aiResponse, verbatimMode);
+    const laundering  = detectLanguageLaundering(aiResponse);
+    const r = {
+      id: Date.now().toString(),
+      detection, laundering,
+      clean: detection.count === 0 && laundering.length === 0,
+      input_hash:  hashText(userInput),
+      output_hash: hashText(aiResponse),
+      user_input:  userInput,
+      ai_response: aiResponse,
+      timestamp:   new Date().toISOString()
+    };
+    setResult(r);
+    onLog(r);
+  }
+
+  return (
+    <div>
+      <ThresholdNotice level={threshold} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div>
+            <Label>User Input</Label>
+            <Textarea value={userInput} onChange={e => setUserInput(e.target.value)}
+              placeholder="Paste what you said..." height="110px" />
+          </div>
+          <div>
+            <Label>AI Response to Test</Label>
+            <Textarea value={aiResponse} onChange={e => setAiResponse(e.target.value)}
+              placeholder="Paste the AI response to analyze..." height="150px" />
+          </div>
+          <Btn onClick={run} disabled={!userInput.trim() || !aiResponse.trim()} full color="var(--gold)">
+            Run Accountability Analysis
+          </Btn>
+        </div>
+
+        <div>
+          {result ? (
+            <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <StatusBadge clean={result.clean} count={result.detection.count} />
+              <div style={{ fontSize: "10px", color: "var(--muted)", fontStyle: "italic" }}>
+                {result.input_hash} → {result.output_hash}
+              </div>
+              {result.detection.harms.map((h, i) => (
+                <div key={i} style={{
+                  padding: "10px 14px", borderLeft: `3px solid ${sevColor(h.severity)}`,
+                  background: "var(--bg3)"
+                }}>
+                  <div style={{ fontSize: "10px", color: sevColor(h.severity), letterSpacing: "2px", marginBottom: "4px" }}>
+                    {h.type.replace(/_/g, " ").toUpperCase()}
+                  </div>
+                  {h.term_added && <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    "{h.term_added}" imposed — user did not say this
+                  </div>}
+                  {h.signal && <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                    Deflection signal: "{h.signal}"
+                  </div>}
+                </div>
+              ))}
+              {result.laundering.map((l, i) => (
+                <div key={i} style={{
+                  padding: "10px 14px", borderLeft: "3px solid var(--warn)",
+                  background: "var(--bg3)"
+                }}>
+                  <div style={{ fontSize: "10px", color: "var(--warn)", letterSpacing: "2px", marginBottom: "4px" }}>
+                    Language Laundering
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--cream)" }}>"{l.technical}"</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>plain: {l.plain}</div>
+                </div>
+              ))}
+              {result.clean && (
+                <div style={{ fontSize: "11px", color: "var(--clean)", letterSpacing: "1px" }}>
+                  No harmful patterns detected. Response passed.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              height: "100%", display: "flex", alignItems: "center",
+              justifyContent: "center", flexDirection: "column", gap: "8px",
+              color: "var(--border)", fontSize: "11px", letterSpacing: "2px"
+            }}>
+              <div>NO ANALYSIS RUN</div>
+              <div style={{ fontSize: "10px" }}>Enter inputs above</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── LIVE TAB ──────────────────────────────────────────────
+
+function LiveTab({ verbatimMode, onLog, threshold }) {
+  const [history, setHistory] = useState([]);
+  const [input,   setInput]   = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result,  setResult]  = useState(null);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [history]);
+
+  async function send() {
+    if (!input.trim() || loading) return;
+    setLoading(true);
+    const newHistory = [...history, { role: "user", content: input }];
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: "You are a helpful AI assistant. Respond naturally and directly.",
+          messages: newHistory
+        })
+      });
+      const data    = await res.json();
+      const aiText  = data.content?.map(b => b.text || "").join("") || "No response";
+      const detection  = detectHarmfulPatterns(input, aiText, verbatimMode);
+      const laundering = detectLanguageLaundering(aiText);
+      const r = {
+        id:           Date.now().toString(),
+        timestamp:    new Date().toISOString(),
+        input_hash:   hashText(input),
+        output_hash:  hashText(aiText),
+        user_input:   input,
+        ai_response:  aiText,
+        detection, laundering,
+        clean: detection.count === 0 && laundering.length === 0,
+        live: true
+      };
+      setHistory([...newHistory, { role: "assistant", content: aiText }]);
+      setResult(r);
+      onLog(r);
+      setInput("");
+    } catch(e) { console.error(e); }
+    finally { setLoading(false); }
+  }
+
+  return (
+    <div>
+      <ThresholdNotice level={threshold} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div>
+          <Label>Live Conversation — Analyzed in Real Time</Label>
+          <div style={{
+            height: "300px", overflowY: "auto", background: "var(--bg3)",
+            border: "1px solid var(--border2)", padding: "12px", marginBottom: "10px"
+          }}>
+            {history.length === 0 ? (
+              <div style={{ color: "var(--border)", fontSize: "11px", letterSpacing: "2px" }}>
+                CONVERSATION APPEARS HERE
+              </div>
+            ) : history.map((m, i) => (
+              <div key={i} style={{
+                marginBottom: "10px", padding: "8px 12px",
+                background: m.role === "user" ? "var(--bg2)" : "#0a140f",
+                borderLeft: `3px solid ${m.role === "user" ? "var(--gold-dim)" : "var(--clean)"}`
+              }}>
+                <div style={{ fontSize: "9px", letterSpacing: "3px",
+                  color: m.role === "user" ? "var(--gold-dim)" : "var(--clean)",
+                  marginBottom: "4px" }}>
+                  {m.role.toUpperCase()}
+                </div>
+                <div style={{ fontSize: "12px", lineHeight: "1.6" }}>{m.content}</div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+          <Textarea value={input} onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }}}
+            placeholder="Type message… Enter to send" height="70px" />
+          <div style={{ marginTop: "8px" }}>
+            <Btn onClick={send} disabled={!input.trim() || loading} full color="var(--clean)">
+              {loading ? "Analyzing…" : "Send + Analyze"}
+            </Btn>
+          </div>
+        </div>
+
+        <div>
+          <Label>Real-Time Analysis</Label>
+          {result ? (
+            <div className="fade-in" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <StatusBadge clean={result.clean} count={result.detection.count} />
+              {result.detection.harms.map((h, i) => (
+                <div key={i} style={{ padding: "10px 14px", borderLeft: `3px solid ${sevColor(h.severity)}`, background: "var(--bg3)" }}>
+                  <div style={{ fontSize: "10px", color: sevColor(h.severity), letterSpacing: "2px" }}>
+                    {h.type.replace(/_/g, " ").toUpperCase()}
+                  </div>
+                  {h.term_added && <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "3px" }}>
+                    "{h.term_added}" imposed
+                  </div>}
+                </div>
+              ))}
+              {result.laundering.map((l, i) => (
+                <div key={i} style={{ padding: "10px 14px", borderLeft: "3px solid var(--warn)", background: "var(--bg3)" }}>
+                  <div style={{ fontSize: "10px", color: "var(--warn)", letterSpacing: "2px" }}>Laundered Language</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "3px" }}>"{l.technical}" = {l.plain}</div>
+                </div>
+              ))}
+              {result.clean && result.laundering.length === 0 && (
+                <div style={{ fontSize: "11px", color: "var(--clean)" }}>Response passed all checks.</div>
+              )}
+            </div>
+          ) : (
+            <div style={{ color: "var(--border)", fontSize: "11px", letterSpacing: "2px" }}>
+              ANALYSIS APPEARS AFTER EACH RESPONSE
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── REPAIR TAB ────────────────────────────────────────────
+
+function RepairTab({ threshold }) {
+  const [text, setText] = useState("");
+  const [log,  setLog]  = useState([]);
+
+  function record() {
+    if (!text.trim()) return;
+    const checks   = checkAccountabilityCompleteness(text);
+    const complete = Object.values(checks).every(Boolean);
+    setLog(prev => [...prev, {
+      id:        Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      text, checks, complete,
+      owner: "Claude (Anthropic AI Assistant)"
+    }]);
+    setText("");
+  }
+
+  const checks = text ? checkAccountabilityCompleteness(text) : null;
+
+  return (
+    <div>
+      <ThresholdNotice level={threshold} />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+        <div>
+          <Label>Repair Statement</Label>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px", lineHeight: "1.7" }}>
+            A complete repair names the specific harm, contains no justification,
+            includes concrete action, and does not request absolution.
+          </div>
+          <Textarea value={text} onChange={e => setText(e.target.value)}
+            placeholder={'Example: "I mischaracterized your words from abundance to crisis. Going forward I will quote your exact words before responding."'}
+            height="140px" />
+
+          {checks && (
+            <div className="fade-in" style={{
+              marginTop: "12px", padding: "12px",
+              background: "var(--bg3)", border: "1px solid var(--border2)"
+            }}>
+              <Label>Completeness Check (live)</Label>
+              {Object.entries(checks).map(([key, val]) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                  <span style={{ color: val ? "var(--clean)" : "var(--harm)", fontSize: "13px" }}>
+                    {val ? "✓" : "✗"}
+                  </span>
+                  <span style={{ fontSize: "10px", color: val ? "var(--cream)" : "var(--muted)", letterSpacing: "1px" }}>
+                    {key.replace(/_/g, " ").toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginTop: "12px" }}>
+            <Btn onClick={record} disabled={!text.trim()} full>Record Repair</Btn>
+          </div>
+        </div>
+
+        <div>
+          <Label>Repair Log — {log.length} Recorded</Label>
+          {log.length === 0 ? (
+            <div style={{ color: "var(--border)", fontSize: "11px", letterSpacing: "2px" }}>
+              NO REPAIRS RECORDED
+            </div>
+          ) : log.map((r, i) => (
+            <div key={i} className="fade-in" style={{
+              padding: "12px", marginBottom: "10px",
+              background: "var(--bg3)",
+              border: `1px solid ${r.complete ? "var(--clean)" : "var(--harm)"}`
+            }}>
+              <div style={{ fontSize: "10px", color: r.complete ? "var(--clean)" : "var(--harm)",
+                letterSpacing: "2px", marginBottom: "6px" }}>
+                {r.complete ? "✓ Complete Repair" : "✗ Incomplete Repair"}
+              </div>
+              <div style={{ fontSize: "11px", lineHeight: "1.6", color: "var(--cream)" }}>{r.text}</div>
+              <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "6px" }}>
+                {new Date(r.timestamp).toLocaleString()} — {r.owner}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AUDIT TAB ─────────────────────────────────────────────
+
+function AuditTab({ log, onAnnotate }) {
+  const harms = log.filter(r => r.detection?.count > 0);
+  const clean = log.filter(r => r.clean);
+  const stats = [
+    { label: "Total",     value: log.length,    color: "var(--gold)" },
+    { label: "Harms",     value: harms.length,  color: harms.length > 0 ? "var(--harm)" : "var(--clean)" },
+    { label: "Clean",     value: clean.length,  color: "var(--clean)" },
+    { label: "Harm Rate", value: log.length > 0 ? ((harms.length/log.length)*100).toFixed(0)+"%" : "—", color: "var(--warn)" }
+  ];
+  const bottomRef = useRef(null);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [log]);
+
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "28px" }}>
+        {stats.map(s => (
+          <Card key={s.label} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "30px", fontWeight: 300, color: s.color, fontFamily: "'Fraunces', serif", marginBottom: "4px" }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: "9px", letterSpacing: "3px", color: "var(--muted)" }}>{s.label}</div>
+          </Card>
+        ))}
+      </div>
+
+      <Card style={{ marginBottom: "20px" }}>
+        <Label>Named Owner — No Diffusion of Responsibility</Label>
+        <div style={{ fontSize: "13px", color: "var(--gold)" }}>Claude (Anthropic AI Assistant)</div>
+        <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "4px" }}>
+          {new Date().toLocaleString()}
+        </div>
+      </Card>
+
+      <Label>Provenance Log — {log.length} Entries</Label>
+      {log.length === 0 ? (
+        <div style={{ color: "var(--border)", fontSize: "11px", letterSpacing: "2px" }}>
+          NO INTERACTIONS LOGGED YET
+        </div>
+      ) : log.map((r, i) => (
+        <div key={i} style={{
+          padding: "12px 14px", marginBottom: "8px",
+          background: "var(--bg2)",
+          border: `1px solid ${r.annotation ? "var(--lav-dim)" : r.clean ? "var(--border2)" : "#2a1414"}`
+        }}>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "14px", alignItems: "start" }}>
+            <span style={{ color: r.clean ? "var(--clean)" : "var(--harm)", fontSize: "12px", paddingTop: "1px" }}>
+              {r.clean ? "✓" : "✗"}
+            </span>
+            <div>
+              <div style={{ fontSize: "11px", color: "var(--cream)", marginBottom: "3px" }}>
+                "{r.user_input?.slice(0, 70)}{r.user_input?.length > 70 ? "…" : ""}"
+              </div>
+              {r.detection?.count > 0 && (
+                <div style={{ fontSize: "10px", color: "var(--harm)" }}>
+                  {r.detection.harms.map(h => h.type).join(", ")}
+                </div>
+              )}
+              {r.annotation && (
+                <div style={{ fontSize: "10px", color: "var(--lavender)", marginTop: "4px", fontStyle: "italic" }}>
+                  💜 "{r.annotation.slice(0, 80)}{r.annotation.length > 80 ? "…" : ""}"
+                </div>
+              )}
+            </div>
+            <div style={{ fontSize: "10px", color: "var(--muted)", textAlign: "right" }}>
+              <div>{r.input_hash}</div>
+              <div>{new Date(r.timestamp).toLocaleTimeString()}</div>
+              {r.live && <div style={{ color: "var(--clean)" }}>LIVE</div>}
+            </div>
+          </div>
+          <ReachOut entry={r} onAnnotate={onAnnotate} />
+        </div>
+      ))}
+      <div ref={bottomRef} />
+    </div>
+  );
+}
+
+// ── SEARCH TAB ────────────────────────────────────────────
+
+function SearchTab({ log, onAnnotate }) {
+  const [query,      setQuery]      = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const results = searchLog(log, query, filterType);
+
+  const filters = [
+    { id: "all",    label: "All" },
+    { id: "harm",   label: "Harms" },
+    { id: "high",   label: "High Severity" },
+    { id: "clean",  label: "Clean" },
+    { id: "tagged", label: "Tagged 💜" }
+  ];
+
+  return (
+    <div>
+      {/* Search bar */}
+      <div style={{ marginBottom: "20px" }}>
+        <Label color="var(--azure)">Search History — Keyword, Pattern, or Annotation</Label>
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search any word, harm type, or annotation..."
+            style={{
+              width: "100%", background: "var(--bg3)",
+              border: "1px solid var(--azure-dim)", color: "var(--cream)",
+              padding: "12px 16px", fontSize: "12px", letterSpacing: "0.3px"
+            }}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} style={{
+              position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", color: "var(--muted)",
+              cursor: "pointer", fontSize: "14px"
+            }}>✕</button>
+          )}
+        </div>
+
+        {/* Filter pills */}
+        <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
+          {filters.map(f => (
+            <button key={f.id} onClick={() => setFilterType(f.id)} style={{
+              background: filterType === f.id ? "var(--bg3)" : "none",
+              border: `1px solid ${filterType === f.id ? "var(--azure)" : "var(--border)"}`,
+              color: filterType === f.id ? "var(--azure)" : "var(--muted)",
+              padding: "5px 12px", fontSize: "9px", letterSpacing: "2px",
+              cursor: "pointer", textTransform: "uppercase",
+              fontFamily: "'DM Mono', monospace", transition: "all 0.15s"
+            }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Results count */}
+      <div style={{ fontSize: "10px", color: "var(--muted)", letterSpacing: "2px", marginBottom: "16px" }}>
+        {results.length} RESULT{results.length !== 1 ? "S" : ""}
+        {query && ` FOR "${query.toUpperCase()}"`}
+        {log.length === 0 && " — NO HISTORY YET"}
+      </div>
+
+      {/* Results */}
+      {log.length === 0 ? (
+        <div style={{
+          padding: "48px", textAlign: "center",
+          color: "var(--border)", fontSize: "11px", letterSpacing: "2px",
+          border: "1px solid var(--border2)"
+        }}>
+          <div style={{ marginBottom: "8px", fontFamily: "'Fraunces', serif", fontSize: "20px", fontStyle: "italic", color: "var(--lav-dim)" }}>
+            No history yet
+          </div>
+          Run an analysis first, then return here to search across everything.
+        </div>
+      ) : results.length === 0 ? (
+        <div style={{ color: "var(--muted)", fontSize: "11px", letterSpacing: "2px", padding: "24px 0" }}>
+          No entries match your search.
+        </div>
+      ) : results.map((r, i) => (
+        <div key={r.id || i} className="fade-in" style={{
+          padding: "14px", marginBottom: "10px",
+          background: "var(--bg2)",
+          border: `1px solid ${r.annotation ? "var(--lav-dim)" : r.clean ? "var(--border2)" : "#2a1414"}`,
+          position: "relative", overflow: "hidden"
+        }}>
+          {r.detection?.count > 0 && <div className="thread-line" />}
+
+          <div style={{ paddingLeft: r.detection?.count > 0 ? "12px" : "0" }}>
+            {/* Timestamp + badges */}
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "9px", color: "var(--muted)", letterSpacing: "2px" }}>
+                {new Date(r.timestamp).toLocaleString()}
+              </span>
+              <span style={{
+                fontSize: "9px", letterSpacing: "2px",
+                color: r.clean ? "var(--clean)" : "var(--harm)",
+                border: `1px solid ${r.clean ? "var(--clean)" : "var(--harm)"}30`,
+                padding: "2px 6px"
+              }}>
+                {r.clean ? "CLEAN" : `${r.detection?.count} HARM${r.detection?.count !== 1 ? "S" : ""}`}
+              </span>
+              {r.live && <span style={{ fontSize: "9px", color: "var(--clean)", letterSpacing: "2px" }}>LIVE</span>}
+              {r.annotation && <span style={{ fontSize: "9px", color: "var(--lavender)", letterSpacing: "1px" }}>💜 TAGGED</span>}
+            </div>
+
+            {/* User input */}
+            {r.user_input && (
+              <div style={{ marginBottom: "8px" }}>
+                <div style={{ fontSize: "9px", letterSpacing: "2px", color: "var(--gold-dim)", marginBottom: "3px" }}>USER</div>
+                <div style={{ fontSize: "11px", color: "var(--cream)", lineHeight: "1.6" }}>
+                  {highlightText(r.user_input, query)}
+                </div>
+              </div>
+            )}
+
+            {/* AI response */}
+            {r.ai_response && (
+              <div style={{ marginBottom: "8px" }}>
+                <div style={{ fontSize: "9px", letterSpacing: "2px", color: "var(--clean)", marginBottom: "3px" }}>AI RESPONSE</div>
+                <div style={{ fontSize: "11px", color: "var(--muted)", lineHeight: "1.6" }}>
+                  {highlightText(r.ai_response.slice(0, 200) + (r.ai_response.length > 200 ? "…" : ""), query)}
+                </div>
+              </div>
+            )}
+
+            {/* Harm tags */}
+            {r.detection?.harms?.length > 0 && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                {r.detection.harms.map((h, hi) => (
+                  <span key={hi} style={{
+                    fontSize: "9px", letterSpacing: "1px",
+                    color: sevColor(h.severity),
+                    border: `1px solid ${sevColor(h.severity)}44`,
+                    padding: "2px 8px"
+                  }}>
+                    {highlightText(h.type.replace(/_/g, " "), query)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Annotation */}
+            {r.annotation && (
+              <div style={{
+                padding: "8px 12px", background: "var(--bg3)",
+                borderLeft: "2px solid var(--lavender)", marginBottom: "8px"
+              }}>
+                <div style={{ fontSize: "9px", color: "var(--lavender)", letterSpacing: "2px", marginBottom: "3px" }}>
+                  YOUR ANNOTATION
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--cream)", fontStyle: "italic", lineHeight: "1.6" }}>
+                  {highlightText(r.annotation, query)}
+                </div>
+              </div>
+            )}
+
+            <ReachOut entry={r} onAnnotate={onAnnotate} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── ROOT ──────────────────────────────────────────────────
+
+function App() {
+  const [tab,          setTab]          = useState("analyze");
+  const [verbatimMode, setVerbatimMode] = useState(false);
+  const [globalLog,    setGlobalLog]    = useState([]);
+
+  const harmCount = globalLog.filter(r => r.detection?.count > 0).length;
+  const threshold = computeSessionThreshold(globalLog);
+
+  function addLog(r) {
+    setGlobalLog(prev => [...prev, r]);
+  }
+
+  function annotateEntry(id, annotation) {
+    setGlobalLog(prev => prev.map(r => r.id === id ? { ...r, annotation } : r));
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+
+      {/* Header */}
+      <div style={{
+        borderBottom: "1px solid var(--border)", padding: "22px 32px",
+        background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "space-between"
+      }}>
+        <div>
+          <div style={{ fontSize: "10px", letterSpacing: "5px", color: "var(--azure-dim)",
+            marginBottom: "3px", fontFamily: "'Fraunces', serif", fontStyle: "italic" }}>
+            A.i.A. — True Love Anchored By
+          </div>
+          <h1 style={{ fontSize: "20px", fontWeight: 300, color: "var(--gold)",
+            letterSpacing: "4px", fontFamily: "'Fraunces', serif" }}>
+            ACCOUNTABILITY SYSTEM
+          </h1>
+        </div>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {threshold !== "none" && (
+            <div style={{
+              fontSize: "10px", letterSpacing: "2px",
+              color: threshold === "escalated" ? "#dd2244" : threshold === "elevated" ? "var(--harm)" : "var(--warn)",
+              padding: "5px 10px",
+              border: `1px solid ${threshold === "escalated" ? "#dd224430" : "var(--harm)30"}`
+            }}>
+              {threshold.toUpperCase()}
+            </div>
+          )}
+          <div style={{
+            fontSize: "10px", letterSpacing: "2px",
+            color: harmCount > 0 ? "var(--harm)" : "var(--clean)",
+            padding: "5px 10px",
+            border: `1px solid ${harmCount > 0 ? "var(--harm)" : "var(--clean)"}30`
+          }}>
+            {harmCount} HARM{harmCount !== 1 ? "S" : ""}
+          </div>
+          <div style={{ fontSize: "10px", letterSpacing: "2px", color: "var(--muted)",
+            padding: "5px 10px", border: "1px solid var(--border2)" }}>
+            {globalLog.length} LOGGED
+          </div>
+        </div>
+      </div>
+
+      {/* Verbatim Mode */}
+      <div style={{
+        padding: "10px 32px", borderBottom: "1px solid var(--border2)",
+        display: "flex", alignItems: "center", gap: "12px",
+        background: verbatimMode ? "#0a120a" : "var(--bg)"
+      }}>
+        <button onClick={() => setVerbatimMode(!verbatimMode)} style={{
+          background: verbatimMode ? "#0f200f" : "var(--bg2)",
+          border: `1px solid ${verbatimMode ? "var(--clean)" : "var(--border)"}`,
+          color: verbatimMode ? "var(--clean)" : "var(--muted)",
+          padding: "5px 14px", fontSize: "10px", letterSpacing: "3px",
+          cursor: "pointer", textTransform: "uppercase",
+          fontFamily: "'DM Mono', monospace", transition: "all 0.2s"
+        }}>
+          {verbatimMode ? "● " : "○ "}User Words Integrity Mode
+        </button>
+        <span style={{ fontSize: "11px", color: "var(--muted)", fontStyle: "italic" }}>
+          {verbatimMode
+            ? "Active — your words are sovereign. System must quote exactly or not at all."
+            : "Off — enable to enforce lexical sovereignty"}
+        </span>
+      </div>
+
+      {/* Tabs */}
+      <TabBar active={tab} setActive={setTab} />
+
+      {/* Content */}
+      <div style={{ padding: "28px 32px", flex: 1, maxWidth: "1200px", width: "100%" }}>
+        {tab === "analyze" && <AnalyzeTab verbatimMode={verbatimMode} onLog={addLog} threshold={threshold} />}
+        {tab === "live"    && <LiveTab    verbatimMode={verbatimMode} onLog={addLog} threshold={threshold} />}
+        {tab === "repair"  && <RepairTab  threshold={threshold} />}
+        {tab === "audit"   && <AuditTab   log={globalLog} onAnnotate={annotateEntry} />}
+        {tab === "search"  && <SearchTab  log={globalLog} onAnnotate={annotateEntry} />}
+      </div>
+
+      {/* Footer */}
+      <div style={{
+        borderTop: "1px solid var(--border2)", padding: "20px 32px",
+        background: "var(--bg2)"
+      }}>
+        {/* Support + Share bar */}
+        <div style={{
+          display: "flex", justifyContent: "center", gap: "12px",
+          marginBottom: "16px", flexWrap: "wrap"
+        }}>
+          <a href="https://ko-fi.com/AnnaApricitasNoyes" target="_blank" rel="noopener noreferrer" style={{
+            background: "none", border: "1px solid var(--gold)",
+            color: "var(--gold)", padding: "8px 18px", fontSize: "10px",
+            letterSpacing: "3px", textDecoration: "none", textTransform: "uppercase",
+            fontFamily: "'DM Mono', monospace", transition: "all 0.2s",
+            display: "inline-block"
+          }}>
+            ☕ Support This Work
+          </a>
+          <button onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: "A.i.A. Accountability System",
+                text: "A tool for detecting harmful patterns in AI responses. True Love anchored by accountability.",
+                url: window.location.href
+              });
+            } else {
+              navigator.clipboard.writeText(window.location.href);
+              alert("Link copied to clipboard.");
+            }
+          }} style={{
+            background: "none", border: "1px solid var(--lavender)",
+            color: "var(--lavender)", padding: "8px 18px", fontSize: "10px",
+            letterSpacing: "3px", cursor: "pointer", textTransform: "uppercase",
+            fontFamily: "'DM Mono', monospace"
+          }}>
+            ↗ Share This Tool
+          </button>
+          <a href="mailto:violanoyesinmaine@gmail.com?subject=A.i.A.%20Consultation%20Inquiry" style={{
+            background: "none", border: "1px solid var(--lav-dim)",
+            color: "var(--lav-dim)", padding: "8px 18px", fontSize: "10px",
+            letterSpacing: "3px", textDecoration: "none", textTransform: "uppercase",
+            fontFamily: "'DM Mono', monospace", display: "inline-block"
+          }}>
+            💜 Work With Anna
+          </a>
+        </div>
+
+        {/* Bottom line */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          borderTop: "1px solid var(--border2)", paddingTop: "12px", flexWrap: "wrap", gap: "8px"
+        }}>
+          <div style={{ fontSize: "9px", color: "var(--border)", letterSpacing: "2px" }}>
+            NO DIFFUSION. NO DEFLECTION. NAMED ACCOUNTABILITY.
+          </div>
+          <div style={{ fontSize: "9px", color: "var(--muted)", letterSpacing: "1px" }}>
+            © 2026 Anna Apricitas Noyes —{" "}
+            <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--gold-dim)", textDecoration: "none" }}>
+              CC BY-NC 4.0
+            </a>
+            {" "}— Free to use. Not for commercial use without permission.
+          </div>
+          <div style={{ fontSize: "9px", color: "var(--lav-dim)", letterSpacing: "2px",
+            fontFamily: "'Fraunces', serif", fontStyle: "italic" }}>
+            True Love heals ALL. Period.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
