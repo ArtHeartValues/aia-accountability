@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<body>
+
+    const SUPABASE_URL = "https://ctwhwmdikhgxoilnqchr.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0d2h3bWRpa2hneG9pbG5xY2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5ODkwMjEsImV4cCI6MjA4NzU2NTAyMX0.edvGKxzGM8pMqmcj0cOcFwU64-6fZEVxN9ykdTjXTew";
+
+    const supabase = window.supabase.createClient(SUBABASE_URL,
+      SUPABASE_ANON_KEY);
+
+    function App() {
+    }
+
+    ReactDOM.createRoot().render(<App />);
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A.i.A. Accountability System</title>
