@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Garden · A·i·A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c8840a;
+    --gold-light: #e8a830;
+    --lavender: #7a5ab8;
+    --lavender-light: #9b7fd4;
+    --lavender-pale: #e8e0f5;
+    --teal: #2a8fa8;
+    --cream: #faf7f2;
+    --parchment: #f2ede4;
+    --ink: #2c2416;
+    --ink-soft: #5a4d3a;
+    --ink-faint: #9a8d7a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .garden-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* HEADER */
+  .garden-header {
+    padding: 36px 0 28px;
+    text-align: center;
+    border-bottom: 1px solid rgba(200,132,10,0.2);
+    margin-bottom: 40px;
+  }
+
+  .garden-mark {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    margin-bottom: 8px;
+  }
+
+  .garden-mark a { color: var(--ink-faint); text-decoration: none; }
+  .garden-mark a:hover { color: var(--gold); }
+
+  .garden-title {
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .garden-sub {
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-weight: 300;
+  }
+
+  /* ENTRY */
+  .entry-question {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .entry-question p {
+    font-size: 1.3rem;
+    font-weight: 300;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .room-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .room-btn {
+    background: none;
+    border: 1px solid rgba(200,132,10,0.3);
+    border-radius: 2px;
+    padding: 16px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    transition: all 0.2s ease;
+    color: var(--ink);
+  }
+
+  .room-btn:hover {
+    border-color: var(--gold);
+    background: rgba(200,132,10,0.04);
+  }
+
+  .room-btn .room-name {
+    font-size: 1.1rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .room-btn .room-desc {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--ink-faint);
+    font-weight: 300;
+  }
+
+  /* ROOMS */
+  .room { display: none; }
+  .room.active { display: block; }
+
+  .room-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(200,132,10,0.15);
+  }
+
+  .back-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.9rem;
+    color: var(--ink-faint);
+    padding: 4px 0;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+
+  .back-btn:hover { color: var(--gold); }
+
+  .room-title {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  /* SHARED FORM */
+  .witness-prompt, .tend-prompt-text {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 140px;
+    background: var(--parchment);
+    border: 1px solid rgba(200,132,10,0.2);
+    border-radius: 2px;
+    padding: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: rgba(200,132,10,0.5); }
+  textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+
+  .submit-btn {
+    margin-top: 14px;
+    background: none;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 12px 28px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: block;
+    margin-left: auto;
+  }
+
+  .submit-btn:hover { background: var(--gold); color: white; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* RESPONSES */
+  .witness-response {
+    margin-top: 32px;
+    padding: 24px;
+    background: rgba(122,90,184,0.05);
+    border-left: 2px solid var(--lavender);
+  }
+
+  .witness-response p {
+    font-size: 1.1rem;
+    line-height: 1.9;
+    color: var(--ink);
+    font-weight: 300;
+  }
+
+  .response-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 12px;
+    font-weight: 300;
+  }
+
+  .witness-response .response-label { color: var(--lavender); }
+
+  .response-after {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(122,90,184,0.15);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  /* STILL ROOM */
+  .season-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid rgba(200,132,10,0.2);
+    margin-bottom: 32px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .season-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    margin-bottom: -1px;
+  }
+
+  .season-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .season-tab:hover { color: var(--ink-soft); }
+
+  .season-content { display: none; }
+  .season-content.active { display: block; }
+
+  .season-text {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--ink-soft);
+    font-weight: 300;
+  }
+
+  .season-text p { margin-bottom: 1.3em; }
+  .season-text p:last-child { margin-bottom: 0; }
+  .season-text em { font-style: italic; color: var(--ink); }
+
+  .season-text .paradox-block {
+    margin: 28px 0;
+    padding: 20px 24px;
+    background: var(--parchment);
+    border-left: 2px solid var(--gold);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.85;
+  }
+
+  .season-text .truth-line {
+    margin: 28px 0 0;
+    text-align: center;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--lavender);
+    font-style: italic;
+  }
+
+  .go-deeper-section {
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid rgba(200,132,10,0.15);
+  }
+
+  .go-deeper-prompt {
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--ink-faint);
+    margin-bottom: 14px;
+  }
+
+  /* CONVERSATION THREADS */
+  .convo-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .convo-entry {
+    padding: 16px 20px;
+    border-radius: 2px;
+  }
+
+  .convo-entry.user {
+    background: rgba(200,132,10,0.06);
+    border: 1px solid rgba(200,132,10,0.15);
+  }
+
+  .convo-entry.ai {
+    background: rgba(122,90,184,0.05);
+    border-left: 2px solid var(--lavender);
+  }
+
+  .convo-entry .entry-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    margin-bottom: 8px;
+    color: var(--ink-faint);
+  }
+
+  .convo-entry.ai .entry-label { color: var(--lavender); }
+  .convo-entry p { font-size: 1rem; line-height: 1.85; color: var(--ink-soft); }
+  .convo-entry.ai p { color: var(--ink); }
+
+  /* TEND ROOM */
+  .tend-response {
+    margin-top: 28px;
+    padding: 24px;
+    background: rgba(42,143,168,0.05);
+    border-left: 2px solid var(--teal);
+  }
+
+  .tend-response .response-label { color: var(--teal); }
+
+  .tend-response p {
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--ink);
+    font-weight: 300;
+    margin-bottom: 1em;
+  }
+
+  .tend-response p:last-of-type { margin-bottom: 0; }
+
+  .momentum-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(42,143,168,0.2);
+  }
+
+  .momentum-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    margin-bottom: 12px;
+  }
+
+  .momentum-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .momentum-btn {
+    background: none;
+    border: 1px solid rgba(42,143,168,0.3);
+    border-radius: 2px;
+    padding: 12px 16px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif;
+    transition: all 0.2s;
+    color: var(--ink);
+  }
+
+  .momentum-btn:hover {
+    border-color: var(--teal);
+    background: rgba(42,143,168,0.04);
+  }
+
+  .momentum-btn .opt-label {
+    font-size: 0.95rem;
+    font-weight: 400;
+    display: block;
+    margin-bottom: 2px;
+    color: var(--teal);
+  }
+
+  .momentum-btn .opt-desc {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--ink-faint);
+  }
+
+  /* AFTER-WITNESS NAVIGATION */
+  .after-witness {
+    margin-top: 32px;
+  }
+
+  .after-witness-q {
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--ink-faint);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .after-witness .room-buttons {
+    gap: 8px;
+  }
+
+  .after-witness .room-btn .room-name {
+    font-size: 0.95rem;
+  }
+
+  /* LOADING */
+  .loading {
+    display: none;
+    padding: 20px 0;
+    text-align: center;
+    color: var(--ink-faint);
+    font-style: italic;
+    font-size: 0.95rem;
+  }
+
+  .loading.active { display: block; }
+
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 1.4s ease-in-out infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* FOOTER */
+  .garden-footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(200,132,10,0.15);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    font-style: italic;
+    line-height: 1.8;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  @media (max-width: 480px) {
+    .garden-title { font-size: 1.6rem; }
+    .room-buttons { max-width: 100%; }
+    .season-tab { padding: 10px 10px; font-size: 0.82rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="garden-wrap">
+
+  <header class="garden-header">
+    <div class="garden-mark">
+      <a href="index.html">A·i·A Accountability</a> · The Garden
+    </div>
+    <h1 class="garden-title">The Garden</h1>
+    <p class="garden-sub">A quiet place to tend what's growing in you</p>
+  </header>
+
+  <!-- ENTRY -->
+  <div id="entry" class="entry-question">
+    <p>What does your garden need today?</p>
+    <div class="room-buttons">
+      <button class="room-btn" onclick="openRoom('witness')">
+        <span class="room-name">Write &amp; Be Witnessed</span>
+        <span class="room-desc">Bring what's present. Receive it back, held.</span>
+      </button>
+      <button class="room-btn" onclick="openRoom('still')">
+        <span class="room-name">Read &amp; Go Deeper</span>
+        <span class="room-desc">Unhurried writing on paradox, feeling, and being human.</span>
+      </button>
+      <button class="room-btn" onclick="openRoom('tend')">
+        <span class="room-name">Ask Something Specific</span>
+        <span class="room-desc">Bring a question. Find your next step forward.</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ WITNESS ROOM ═══════════════════════ -->
+  <div id="room-witness" class="room">
+    <div class="room-header">
+      <button class="back-btn" onclick="closeRoom()">← back</button>
+      <h2 class="room-title">Write &amp; Be Witnessed</h2>
+    </div>
+
+    <p class="witness-prompt">
+      Write what's present. You don't need to explain it or understand it first.
+      Whatever is here — bring it.
+    </p>
+
+    <textarea id="witness-text" placeholder="What's here right now…" rows="6"></textarea>
+    <button class="submit-btn" id="witness-btn" onclick="submitWitness()">Bring this →</button>
+    <div class="loading" id="witness-loading">receiving what you brought</div>
+
+    <div id="witness-response" style="display:none">
+      <div class="witness-response">
+        <div class="response-label">Witnessed</div>
+        <p id="witness-response-text"></p>
+      </div>
+      <div class="response-after">
+        This stays only as long as you're here. Nothing is stored.
+      </div>
+      <div class="after-witness">
+        <p class="after-witness-q">Where would you like to go from here?</p>
+        <div class="room-buttons">
+          <button class="room-btn" onclick="writeMore()">
+            <span class="room-name">Write more</span>
+            <span class="room-desc">There's more to bring</span>
+          </button>
+          <button class="room-btn" onclick="goto('still')">
+            <span class="room-name">Read &amp; go deeper</span>
+            <span class="room-desc">Something in the frameworks might meet this</span>
+          </button>
+          <button class="room-btn" onclick="goto('tend')">
+            <span class="room-name">Ask a specific question</span>
+            <span class="room-desc">Something became clearer — bring it forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ STILL ROOM ═══════════════════════ -->
+  <div id="room-still" class="room">
+    <div class="room-header">
+      <button class="back-btn" onclick="closeRoom()">← back</button>
+      <h2 class="room-title">Read &amp; Go Deeper</h2>
+    </div>
+
+    <div class="season-tabs">
+      <button class="season-tab active" onclick="showSeason(event,'wholeness')">Wholeness</button>
+      <button class="season-tab" onclick="showSeason(event,'paradox')">Paradox</button>
+      <button class="season-tab" onclick="showSeason(event,'grief')">Grief &amp; Loss</button>
+      <button class="season-tab" onclick="showSeason(event,'knowing')">Knowing &amp; Doing</button>
+      <button class="season-tab" onclick="showSeason(event,'love')">True Love</button>
+    </div>
+
+    <!-- WHOLENESS -->
+    <div id="season-wholeness" class="season-content active">
+      <div class="season-text">
+        <p>There is a belief, quiet and persistent, that you have to earn your own wholeness. That something happened — or many things happened — that took pieces of you, and that the task of your life is to recover them. To become whole enough to deserve the things you want. To repair enough to be worthy of love.</p>
+        <p>This belief is understandable. It feels true because certain experiences <em>do</em> break something open in us. Certain losses leave a mark. Certain betrayals rearrange the furniture of the self. You are not wrong that something changed.</p>
+        <div class="paradox-block">But here is what the frameworks hold: you were whole before the change, and you are whole after it. The change happened to a whole person. The loss was experienced by a whole person. You have not lost your wholeness — you have had the experience of a whole person who is also hurting.</div>
+        <p>This is not a comfort designed to make you feel better. It is a description of what is actually true. Wholeness does not mean undamaged. A tree that has weathered storms has not lost its treeness. The storm happened, the branches may have changed, but the tree did not become un-tree.</p>
+        <p>The misunderstanding is this: we confuse <em>functioning</em> with wholeness. When we cannot do the things we used to do — hold ourselves together, be present with others, trust what we trusted before — we conclude that we have become less. But you can be a whole person who is currently unable to function in the old ways. The inability is information about what happened. It is not a measurement of your worth.</p>
+        <div class="paradox-block">Love — real love, the kind described in these frameworks — does not make you whole. Love recognizes the wholeness already present. This is not a small distinction. It means no person, no relationship, no achievement, no healing practice can give you what you already have. They can help you see it. They cannot create it.</div>
+        <p>What does it feel like to locate the part of you that has not changed? Not the part that is doing well — that fluctuates. The part that is simply <em>you</em>, prior to all the labels and evaluations. That part has not left. It has been present through everything you have survived. It is present now.</p>
+        <div class="truth-line">You are already whole. This is where we begin.</div>
+      </div>
+      <div class="go-deeper-section">
+        <p class="go-deeper-prompt">Something here land? Sit with it, or go further.</p>
+        <div class="convo-thread" id="thread-wholeness"></div>
+        <textarea id="input-wholeness" placeholder="What this brings up for you, or where you want to go further…" rows="4"></textarea>
+        <button class="submit-btn" onclick="submitExplore('wholeness')">Go deeper →</button>
+        <div class="loading" id="loading-wholeness">settling into what you brought</div>
+      </div>
+    </div>
+
+    <!-- PARADOX -->
+    <div id="season-paradox" class="season-content">
+      <div class="season-text">
+        <p>We are taught, in ways so ambient we rarely notice them, that contradictions cannot both be true. That if you love someone, you should want to be with them. That if you are healing, you should be feeling better. That if you know something, you should be able to act on it. That clarity and confusion are opposites and you must choose.</p>
+        <p>But the actual experience of being human is almost entirely paradox. You can be grateful for your life and exhausted by it at the same time. You can love someone deeply and know the relationship is ending. You can understand, with your whole mind, why you keep doing something — and keep doing it anyway. You can feel two completely contradictory things in your body simultaneously, with equal force.</p>
+        <div class="paradox-block">The frameworks hold this truth precisely: paradox is not a sign that something is wrong with your perception. It is the actual structure of emotional experience. The person who is never in paradox is not more enlightened. They are more defended.</div>
+        <p>The problem is not the paradox itself. The problem is what we do when we encounter it. We try to resolve it — to figure out which feeling is the "real" one, which truth is the "actual" truth. We treat the contradiction as a puzzle to be solved rather than a territory to be inhabited.</p>
+        <p>What would it mean to stop trying to resolve? To say: both of these are true right now. They do not need to fight. The grief and the gratitude can exist in the same breath. The wanting to stay and the knowing you need to go can live in the same body without one of them having to win.</p>
+        <div class="paradox-block">Eye — the first step — means: see what IS. Not what should be. Not what makes sense. Not what resolves cleanly. What IS. The paradox you are living is real. You do not need to escape it to be okay.</div>
+        <p>There is something that happens when you stop fighting a paradox and simply acknowledge it. Not acceptance in the passive sense — but the kind of acknowledgment that says: this is what is actually happening in me. Both things. All at once. I can see this clearly now. That clarity — that willingness to see — is itself a form of healing.</p>
+        <div class="truth-line">You do not have to choose between two true things.</div>
+      </div>
+      <div class="go-deeper-section">
+        <p class="go-deeper-prompt">A paradox you're living? Bring it here.</p>
+        <div class="convo-thread" id="thread-paradox"></div>
+        <textarea id="input-paradox" placeholder="The two things that feel like they can't both be true, but are…" rows="4"></textarea>
+        <button class="submit-btn" onclick="submitExplore('paradox')">Go deeper →</button>
+        <div class="loading" id="loading-paradox">settling into what you brought</div>
+      </div>
+    </div>
+
+    <!-- GRIEF -->
+    <div id="season-grief" class="season-content">
+      <div class="season-text">
+        <p>Grief is not an emotion. It is a landscape. You do not feel grief the way you feel anger or joy — sudden, recognizable, and then receding. Grief is the territory you move through after something has ended that you did not want to end. It has weather. It has seasons. You can be in it for years and still encounter parts of it you have not been to before.</p>
+        <p>One of the most disorienting things about grief is that it is not proportional. The size of the loss does not predict the size of the grief. A small goodbye can open something enormous. A great loss can, for a while, feel almost nothing — and then arrive fully six months later in the middle of an ordinary afternoon.</p>
+        <div class="paradox-block">What Remains: when a vessel falls and water spills, you can spend all your energy watching what was lost. Or you can, when you are ready, look at what remains. Both are true simultaneously. The water spilled. Something remains. The frameworks do not rush you to the remaining. They ask only that you know it is there.</div>
+        <p>There is a particular kind of grief that has no name: the grief for what never happened. For the version of your life that you believed was coming and did not come. For the relationship that did not become what you thought it would. For the parent who could not show up the way a parent should. This grief is real and it is very rarely acknowledged. The loss is just as significant for being invisible.</p>
+        <p>Grief asks for presence. Not your managed presence — not the version of you that can hold it together and speak clearly about what happened. Your actual presence. Which sometimes looks like being unable to speak. Which sometimes looks like saying something that doesn't quite make sense. Which sometimes looks like laughing in the middle of it, because grief is strange and nonlinear.</p>
+        <div class="paradox-block">You are already whole while grieving. These are not contradictions. A whole person grieves. A whole person cannot get out of bed on certain mornings. Wholeness is not the absence of wound. It is the presence of self.</div>
+        <p>The question is not when the grief will be finished. The question is: can you stay present to it without requiring it to be different than it is? Can you be with yourself through this, the way you would want someone to be with you?</p>
+        <div class="truth-line">Grief honored is love with nowhere left to go, finding its way.</div>
+      </div>
+      <div class="go-deeper-section">
+        <p class="go-deeper-prompt">What loss is present for you right now?</p>
+        <div class="convo-thread" id="thread-grief"></div>
+        <textarea id="input-grief" placeholder="The loss you're moving through, or the grief you've been carrying…" rows="4"></textarea>
+        <button class="submit-btn" onclick="submitExplore('grief')">Go deeper →</button>
+        <div class="loading" id="loading-grief">settling into what you brought</div>
+      </div>
+    </div>
+
+    <!-- KNOWING & DOING -->
+    <div id="season-knowing" class="season-content">
+      <div class="season-text">
+        <p>There is a particular kind of suffering that comes from knowing exactly what you need to do — and being unable to do it. You understand the pattern. You have named it, analyzed it, seen it clearly. You know, in the abstract, what a different choice would look like. And yet when the moment arrives, something happens — something older and faster than your understanding — and you find yourself doing the familiar thing again.</p>
+        <p>The conventional response to this is to try harder to know. To understand more. To trace the pattern to its origin. To get smarter about the mechanism. But the gap between knowing and doing is not an information deficit. It is not solved by more insight.</p>
+        <div class="paradox-block">The gap between words and actions is one of the most precise things you can name about yourself. You say you are committed. You believe you are committed. And then, when it costs something, you discover whether you actually are. This is not a judgment. It is information. Naming it honestly — without performing shame, without performing acceptance — is where something can actually shift.</div>
+        <p>There are things that live below understanding. Patterns formed when you were very young, before language, before the capacity to analyze. The body learned certain things were dangerous. The nervous system organized itself around certain threats. And now, decades later, your intellectual understanding has moved far beyond those old organizations — but the body has not yet received the update.</p>
+        <p>This is not a failure of will. It is the actual structure of how humans change. Change is not a decision. It is an accumulation of small moments in which you practice something different, imperfectly, and the pattern slowly reorganizes. You cannot think your way out of a body-level pattern. You can only act your way through it, slowly, with patience and accountability.</p>
+        <div class="paradox-block">Stop Negating, Start Being: the framework asks you to claim what is true. But this is not about forcing confidence you do not have. It is about naming accurately. "I know what I need to do and I cannot yet do it" is more true than "I don't know what's going on." You can claim the knowing and the inability simultaneously, without one canceling the other.</div>
+        <p>What if you stopped requiring yourself to close the gap before you deserve kindness? What if the gap between knowing and doing is simply where you currently are — real, acknowledged, not a referendum on your worth?</p>
+        <div class="truth-line">Knowing is the beginning. Doing is the practice. The gap is where you're growing.</div>
+      </div>
+      <div class="go-deeper-section">
+        <p class="go-deeper-prompt">A gap you're living in? Bring it here.</p>
+        <div class="convo-thread" id="thread-knowing"></div>
+        <textarea id="input-knowing" placeholder="What you know and cannot yet do, or the pattern you keep returning to…" rows="4"></textarea>
+        <button class="submit-btn" onclick="submitExplore('knowing')">Go deeper →</button>
+        <div class="loading" id="loading-knowing">settling into what you brought</div>
+      </div>
+    </div>
+
+    <!-- TRUE LOVE -->
+    <div id="season-love" class="season-content">
+      <div class="season-text">
+        <p>True Love, as these frameworks mean it, is not a feeling. It is an orientation. It is what you do when you see another person — or yourself — clearly, and you do not look away. It is what you bring when something hard is happening, and the easier thing would be to redirect it or soften it or not name it at all.</p>
+        <p>The ordinary meaning of love — romantic feeling, warmth, the sense of being drawn to someone — is real and it matters. But it is not what heals. What heals is something older and quieter: the willingness to be precisely present. To receive what someone actually brings, rather than the more comfortable version. To say what is actually true, even when the relationship would feel easier if you didn't.</p>
+        <div class="paradox-block">Here is one of the central paradoxes of love: the things that feel like love in the moment are often not love. Protecting someone from the truth feels caring. It is, in fact, a quiet statement that you do not believe they can handle what is real. Staying in a dynamic that is harming both people because leaving would hurt them feels loving. It may be avoidance wearing love's clothes.</div>
+        <p>True Love Heals ALL — the foundational claim of these frameworks — is not a promise that love fixes everything. It is a statement about mechanism. The healing happens through precise presence, through the willingness to witness without distorting, through the choice to stay in the difficult conversation rather than defecting into comfort. That is what heals.</p>
+        <p>Loving yourself with this quality of love is one of the most difficult practices. We are often willing to be honest with others, even when it costs something. We are far less often willing to be honest with ourselves — to see clearly what we are doing, what we want, what we are afraid of, without softening it into something easier to carry.</p>
+        <div class="paradox-block">What would it mean to be witnessed by yourself? To look at what is actually happening in you — not the version you would present to someone you wanted to impress — but the actual thing, with the same quality of attention you would give someone you love.</div>
+        <p>The Golden Rule, extended all the way: treat yourself as you would treat someone you love. Not as a rule to follow. As a practice to keep returning to when you notice you have left it.</p>
+        <div class="truth-line">True Love is what you receive when someone sees you precisely and stays.</div>
+      </div>
+      <div class="go-deeper-section">
+        <p class="go-deeper-prompt">What does love mean for you right now?</p>
+        <div class="convo-thread" id="thread-love"></div>
+        <textarea id="input-love" placeholder="What love looks like in your life, where it's missing, or what you're learning about it…" rows="4"></textarea>
+        <button class="submit-btn" onclick="submitExplore('love')">Go deeper →</button>
+        <div class="loading" id="loading-love">settling into what you brought</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TEND ROOM ═══════════════════════ -->
+  <div id="room-tend" class="room">
+    <div class="room-header">
+      <button class="back-btn" onclick="closeRoom()">← back</button>
+      <h2 class="room-title">Ask Something Specific</h2>
+    </div>
+
+    <p class="tend-prompt-text">
+      Bring a specific question — about a pattern you're in, a relationship,
+      a decision, something you can't quite see. Ask what you actually need to ask.
+    </p>
+
+    <div class="convo-thread" id="tend-thread"></div>
+    <textarea id="tend-text" placeholder="Ask your question…" rows="5"></textarea>
+    <button class="submit-btn" id="tend-btn" onclick="submitTend()">Ask this →</button>
+    <div class="loading" id="tend-loading">tending to what you brought</div>
+
+    <div id="tend-response" style="display:none">
+      <div class="tend-response">
+        <div class="response-label">Tending</div>
+        <div id="tend-response-body"></div>
+        <div class="momentum-section">
+          <div class="momentum-label">Where would you like to go from here?</div>
+          <div class="momentum-options" id="momentum-options"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="garden-footer">
+    <p>The Garden · Part of A·i·A Accountability</p>
+    <p style="margin-top:6px;">True Love heals ALL. Period. 💜</p>
+  </footer>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://ctwhwmdikhgxoilnqchr.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0d2h3bWRpa2hneG9pbG5xY2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NzIxNjcsImV4cCI6MjA1NjI0ODE2N30.MHmBhx6JHUJGnJCRt-t04VPPMGhJo0H-Bpf0sE3HFa0";
+  const FN_URL = `${SUPABASE_URL}/functions/v1/witness`;
+
+  const stillCtx = { wholeness:[], paradox:[], grief:[], knowing:[], love:[] };
+  let tendCtx = [];
+
+  // ─── NAVIGATION ─────────────────────────────────────
+  function openRoom(room) {
+    document.getElementById('entry').style.display = 'none';
+    document.querySelectorAll('.room').forEach(r => r.classList.remove('active'));
+    document.getElementById('room-' + room).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function closeRoom() {
+    document.querySelectorAll('.room').forEach(r => r.classList.remove('active'));
+    document.getElementById('entry').style.display = 'block';
+    window.scrollTo(0,0);
+  }
+
+  function goto(room) { openRoom(room); }
+
+  function writeMore() {
+    document.getElementById('witness-response').style.display = 'none';
+    document.getElementById('witness-text').value = '';
+    document.getElementById('witness-text').focus();
+  }
+
+  function showSeason(evt, name) {
+    document.querySelectorAll('.season-content').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('season-' + name).classList.add('active');
+    evt.target.classList.add('active');
+  }
+
+  // ─── API ─────────────────────────────────────────────
+  async function callAPI(text, mode, context) {
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ text, mode, context })
+    });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.response;
+  }
+
+  // ─── WITNESS ─────────────────────────────────────────
+  async function submitWitness() {
+    const text = document.getElementById('witness-text').value.trim();
+    if (!text) return;
+    setLoading('witness', true);
+    document.getElementById('witness-response').style.display = 'none';
+    try {
+      const resp = await callAPI(text, 'witness', []);
+      document.getElementById('witness-response-text').textContent = resp;
+      document.getElementById('witness-response').style.display = 'block';
+      document.getElementById('witness-response').scrollIntoView({behavior:'smooth', block:'start'});
+    } catch(e) {
+      document.getElementById('witness-response-text').textContent =
+        'Something quietly interrupted this. Your words still matter. Try once more when you\'re ready.';
+      document.getElementById('witness-response').style.display = 'block';
+    }
+    setLoading('witness', false);
+  }
+
+  // ─── EXPLORE ─────────────────────────────────────────
+  async function submitExplore(season) {
+    const input = document.getElementById(`input-${season}`).value.trim();
+    if (!input) return;
+    setLoading(season, true);
+
+    addToThread(`thread-${season}`, 'user', 'You', input);
+    stillCtx[season].push({ role:'user', content: input });
+    document.getElementById(`input-${season}`).value = '';
+
+    try {
+      const resp = await callAPI(input, 'explore', stillCtx[season]);
+      stillCtx[season].push({ role:'assistant', content: resp });
+      const el = addToThread(`thread-${season}`, 'ai', 'From the ground', resp);
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    } catch(e) {
+      addToThread(`thread-${season}`, 'ai', 'From the ground', 'Something interrupted. Your words are still here. Try once more.');
+    }
+
+    setLoading(season, false);
+    document.getElementById(`input-${season}`).placeholder = 'Continue the conversation…';
+  }
+
+  // ─── TEND ────────────────────────────────────────────
+  async function submitTend() {
+    const input = document.getElementById('tend-text').value.trim();
+    if (!input) return;
+    setLoading('tend', true);
+    document.getElementById('tend-response').style.display = 'none';
+
+    if (tendCtx.length > 0) {
+      addToThread('tend-thread', 'user', 'You', input);
+    }
+    tendCtx.push({ role:'user', content: input });
+    document.getElementById('tend-text').value = '';
+
+    try {
+      const resp = await callAPI(input, 'tend', tendCtx);
+      tendCtx.push({ role:'assistant', content: resp });
+
+      const { mainText, options } = parseTend(resp);
+
+      const body = document.getElementById('tend-response-body');
+      body.innerHTML = '';
+      mainText.split(/\n\n+/).filter(p => p.trim()).forEach(para => {
+        const p = document.createElement('p');
+        p.textContent = para.trim();
+        body.appendChild(p);
+      });
+
+      const optCont = document.getElementById('momentum-options');
+      optCont.innerHTML = '';
+      if (options.length === 0) {
+        options.push({ label: 'Continue', desc: 'Keep going with this thread' });
+      }
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'momentum-btn';
+        btn.innerHTML = `<span class="opt-label">${esc(opt.label)}</span><span class="opt-desc">${esc(opt.desc)}</span>`;
+        btn.onclick = () => {
+          document.getElementById('tend-text').value = opt.label;
+          document.getElementById('tend-text').focus();
+          document.getElementById('tend-text').scrollIntoView({behavior:'smooth'});
+        };
+        optCont.appendChild(btn);
+      });
+
+      document.getElementById('tend-response').style.display = 'block';
+      document.getElementById('tend-response').scrollIntoView({behavior:'smooth', block:'start'});
+    } catch(e) {
+      document.getElementById('tend-response-body').innerHTML =
+        '<p style="font-style:italic;color:var(--ink-faint)">Something interrupted. Your question still matters. Try once more.</p>';
+      document.getElementById('tend-response').style.display = 'block';
+    }
+
+    setLoading('tend', false);
+    document.getElementById('tend-text').placeholder = 'Continue, or ask something new…';
+  }
+
+  function parseTend(text) {
+    const lines = text.split('\n');
+    const options = [], mainLines = [];
+    lines.forEach(line => {
+      const m = line.match(/^OPTION:\s*(.+?)\s*\|\s*(.+)$/);
+      if (m) options.push({ label: m[1].trim(), desc: m[2].trim() });
+      else mainLines.push(line);
+    });
+    return { mainText: mainLines.join('\n').trim(), options };
+  }
+
+  // ─── HELPERS ─────────────────────────────────────────
+  function addToThread(threadId, type, label, text) {
+    const thread = document.getElementById(threadId);
+    const div = document.createElement('div');
+    div.className = `convo-entry ${type}`;
+    div.innerHTML = `<div class="entry-label">${esc(label)}</div><p>${esc(text)}</p>`;
+    thread.appendChild(div);
+    return div;
+  }
+
+  function setLoading(id, on) {
+    const loadEl = document.getElementById(`loading-${id}`) ||
+                   document.getElementById(`${id}-loading`);
+    const btnEl = document.getElementById(`${id}-btn`) ||
+                  document.querySelector(`#room-${id} .submit-btn`) ||
+                  document.querySelector(`#season-${id} .submit-btn`);
+    if (loadEl) loadEl.classList.toggle('active', on);
+    if (btnEl) btnEl.disabled = on;
+  }
+
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ─── KEYBOARD ────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.key !== 'Enter') return;
+    if (document.getElementById('room-witness').classList.contains('active')) submitWitness();
+    else if (document.getElementById('room-tend').classList.contains('active')) submitTend();
+    else if (document.getElementById('room-still').classList.contains('active')) {
+      const active = document.querySelector('.season-content.active');
+      if (active) submitExplore(active.id.replace('season-',''));
+    }
+  });
+</script>
+</body>
+</html>
