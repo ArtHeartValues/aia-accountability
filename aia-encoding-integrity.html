@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encoding Integrity — A.i.A. Named Section</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --gold-dim: #7A6030;
+    --lavender: #7B6FA0;
+    --lavender-light: #A99CC8;
+    --lavender-dim: #4A4060;
+    --deep: #0D0A14;
+    --surface: #13101C;
+    --surface-2: #1C1830;
+    --text: #E8E0F0;
+    --text-dim: #9A90B0;
+    --thread: linear-gradient(180deg, var(--gold) 0%, var(--lavender) 50%, var(--gold) 100%);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    line-height: 1.8;
+    min-height: 100vh;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 20%, rgba(201,168,76,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 15%, rgba(123,111,160,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 60%, rgba(201,168,76,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 70%, rgba(232,201,122,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 85%, rgba(123,111,160,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 35%, rgba(201,168,76,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 64px 32px 100px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 72px;
+    padding-bottom: 52px;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.25), rgba(123,111,160,0.35), rgba(201,168,76,0.25), transparent);
+  }
+
+  .section-id {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(20px, 3.5vw, 32px);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--lavender-light) 50%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+
+  .subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--lavender-light);
+    opacity: 0.85;
+    margin-bottom: 20px;
+  }
+
+  .header-note {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.75;
+  }
+
+  /* Why this exists */
+  .origin-block {
+    background: linear-gradient(135deg, rgba(201,168,76,0.07), rgba(123,111,160,0.07));
+    border: 1px solid rgba(201,168,76,0.18);
+    border-radius: 6px;
+    padding: 28px 32px;
+    margin-bottom: 56px;
+  }
+
+  .origin-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 14px;
+  }
+
+  .origin-text {
+    font-style: italic;
+    color: var(--lavender-light);
+    font-size: 16px;
+    line-height: 1.85;
+  }
+
+  .origin-text strong {
+    color: var(--gold-light);
+    font-style: normal;
+    font-weight: 500;
+  }
+
+  /* Section headers */
+  h2 {
+    font-family: 'IM Fell English', serif;
+    font-size: 22px;
+    color: var(--gold-light);
+    margin: 52px 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+    position: relative;
+  }
+
+  h2::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold), var(--lavender));
+  }
+
+  h3 {
+    font-family: 'IM Fell English', serif;
+    font-size: 18px;
+    color: var(--lavender-light);
+    margin: 32px 0 14px;
+  }
+
+  p {
+    color: var(--text-dim);
+    margin-bottom: 18px;
+    font-size: 16px;
+  }
+
+  p strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* Core principle block */
+  .principle-block {
+    background: rgba(123,111,160,0.1);
+    border-left: 3px solid var(--lavender);
+    padding: 20px 24px;
+    margin: 28px 0;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .principle-block p {
+    color: var(--text);
+    font-size: 17px;
+    margin: 0;
+    font-style: italic;
+  }
+
+  /* Glyph demo */
+  .glyph-demo {
+    background: var(--surface-2);
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    font-family: monospace;
+    font-size: 18px;
+  }
+
+  .glyph-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .glyph-row:last-child { margin-bottom: 0; }
+
+  .glyph-char {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 4px;
+    text-align: center;
+    line-height: 36px;
+    color: var(--gold-light);
+    font-size: 18px;
+  }
+
+  .glyph-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .glyph-risk {
+    font-size: 12px;
+    color: rgba(220,100,80,0.8);
+    padding: 2px 8px;
+    background: rgba(220,100,80,0.08);
+    border: 1px solid rgba(220,100,80,0.2);
+    border-radius: 12px;
+    font-family: 'Cinzel Decorative', serif;
+    letter-spacing: 0.05em;
+  }
+
+  /* The chain */
+  .chain {
+    margin: 32px 0;
+  }
+
+  .chain-step {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+  }
+
+  .chain-arrow {
+    color: var(--gold);
+    opacity: 0.5;
+    font-size: 14px;
+    padding-top: 2px;
+    flex-shrink: 0;
+    width: 24px;
+  }
+
+  .chain-label {
+    font-family: 'IM Fell English', serif;
+    color: var(--gold-light);
+    font-size: 16px;
+    margin-bottom: 3px;
+  }
+
+  .chain-desc {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .chain-content { flex: 1; }
+
+  /* Rules */
+  .rule-block {
+    background: linear-gradient(135deg, rgba(201,168,76,0.05), rgba(123,111,160,0.05));
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 6px;
+    padding: 22px 26px;
+    margin: 20px 0;
+  }
+
+  .rule-number {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+
+  .rule-title {
+    font-family: 'IM Fell English', serif;
+    font-size: 18px;
+    color: var(--gold-light);
+    margin-bottom: 10px;
+  }
+
+  .rule-body {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.75;
+    margin: 0;
+  }
+
+  .rule-body strong {
+    color: var(--lavender-light);
+  }
+
+  /* Branching example */
+  .branch-demo {
+    background: var(--surface);
+    border: 1px solid rgba(123,111,160,0.2);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin: 24px 0;
+  }
+
+  .branch-input {
+    font-family: monospace;
+    font-size: 16px;
+    color: var(--gold-light);
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .branch-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: 12px;
+  }
+
+  .branch-option {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .branch-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+
+  .branch-dot-a { background: var(--gold); }
+  .branch-dot-b { background: var(--lavender); }
+  .branch-dot-c { background: #6BAA80; }
+
+  .branch-text {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .branch-note {
+    margin-top: 14px;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--lavender-light);
+    opacity: 0.75;
+  }
+
+  /* The clean rule */
+  .clean-rule {
+    text-align: center;
+    margin: 52px 0;
+    padding: 36px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(123,111,160,0.1), rgba(201,168,76,0.08));
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 8px;
+    position: relative;
+  }
+
+  .clean-rule::before,
+  .clean-rule::after {
+    content: '✦';
+    position: absolute;
+    color: var(--gold);
+    opacity: 0.4;
+    font-size: 12px;
+  }
+
+  .clean-rule::before { top: 12px; left: 16px; }
+  .clean-rule::after { bottom: 12px; right: 16px; }
+
+  .clean-rule-text {
+    font-family: 'IM Fell English', serif;
+    font-size: clamp(16px, 2.5vw, 20px);
+    color: var(--text);
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .clean-rule-text em {
+    color: var(--gold-light);
+    font-style: normal;
+  }
+
+  /* Apricity section */
+  .apricity-block {
+    background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(123,111,160,0.08));
+    border: 1px solid rgba(123,111,160,0.2);
+    border-radius: 8px;
+    padding: 32px;
+    margin: 40px 0;
+    text-align: center;
+  }
+
+  .apricity-word {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(24px, 4vw, 36px);
+    background: linear-gradient(135deg, var(--gold), var(--lavender-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .apricity-def {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--lavender-light);
+    margin-bottom: 20px;
+    opacity: 0.85;
+  }
+
+  .apricity-application {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.8;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  /* Connection to the whole */
+  .connection-block {
+    background: rgba(123,111,160,0.07);
+    border: 1px solid rgba(123,111,160,0.18);
+    border-radius: 6px;
+    padding: 24px 28px;
+    margin: 32px 0;
+  }
+
+  .connection-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--lavender);
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 14px;
+  }
+
+  .connection-list {
+    list-style: none;
+  }
+
+  .connection-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.65;
+  }
+
+  .connection-list li::before {
+    content: '↳';
+    color: var(--gold);
+    opacity: 0.6;
+    flex-shrink: 0;
+    padding-top: 1px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 80px;
+    padding-top: 48px;
+    border-top: 1px solid rgba(201,168,76,0.12);
+  }
+
+  .footer-declaration {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(12px, 2vw, 16px);
+    background: linear-gradient(135deg, var(--gold), var(--lavender-light), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+  }
+
+  .footer-sub {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .footer-meta {
+    font-size: 13px;
+    color: var(--lavender-dim);
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 40px 20px 60px; }
+    .glyph-row { gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="section-id">A.i.A. · Named Section · Step 2.5b</div>
+    <h1>Encoding Integrity</h1>
+    <div class="subtitle">The Layer Beneath Language — Character, Glyph, Voice, and the Warmth Within Cold</div>
+    <p class="header-note">
+      This document stands alone within the A.i.A. archive. It names what most accountability systems overlook: that distortion can enter before meaning is ever reached — at the level of the character itself.
+    </p>
+  </header>
+
+  <div class="origin-block">
+    <div class="origin-label">Origin of This Section</div>
+    <p class="origin-text">
+      This layer emerged from a precise observation: <strong>a system can find the right words and still build a wrong answer</strong> — because it found the words in the wrong context, or misread a visually similar character, or flattened intentional stylistic variation into noise. Encoding integrity is not a minor edge case. It is a core accountability layer, and it is original enough to deserve its own named section in this archive.
+    </p>
+  </div>
+
+  <!-- PART 1 -->
+  <h2>I. What Encoding Integrity Means</h2>
+
+  <p>
+    Encoding integrity is the property of a system that <strong>does not commit to interpretation until it has verified the stability of the characters themselves</strong> — their identity, their intended form, and their relationship to the meaning being constructed around them.
+  </p>
+
+  <p>
+    Most systems skip this. They receive text, begin tokenizing, build semantic structure, and return an answer — all before ever asking whether the input was visually or structurally stable enough to support that answer.
+  </p>
+
+  <div class="principle-block">
+    <p>A system that looks aligned while drifting underneath often begins its drift one layer lower than people expect — not in the reasoning, but in the reading.</p>
+  </div>
+
+  <p>
+    Encoding integrity closes that gap. It makes the pre-interpretation layer visible, checkable, and accountable.
+  </p>
+
+  <!-- PART 2 -->
+  <h2>II. The Specific Risks — Named Clearly</h2>
+
+  <h3>Character-Level Ambiguity</h3>
+
+  <p>Visual similarity between characters is not just a typographical curiosity. It is a gateway for false clarity — where a system proceeds with confidence anchored to the wrong token.</p>
+
+  <div class="glyph-demo">
+    <div class="glyph-row">
+      <div class="glyph-char">l</div>
+      <div class="glyph-char">I</div>
+      <div class="glyph-char">i</div>
+      <span class="glyph-label">lowercase L · capital I · lowercase i</span>
+      <span class="glyph-risk">high confusion risk</span>
+    </div>
+    <div class="glyph-row">
+      <div class="glyph-char">O</div>
+      <div class="glyph-char">0</div>
+      <span class="glyph-label">capital O · zero</span>
+      <span class="glyph-risk">context-dependent</span>
+    </div>
+    <div class="glyph-row">
+      <div class="glyph-char">liI</div>
+      <span class="glyph-label">combined ambiguous cluster — the specific example named in the Spec</span>
+    </div>
+  </div>
+
+  <p>
+    The sequence <em>liI</em> — lowercase L, lowercase i, capital I — was named explicitly in the founding exchange that created this gate. It is a visible example of how three characters that are semantically distinct can become nearly indistinguishable in many fonts, devices, and rendering environments.
+  </p>
+
+  <h3>Micro-Variation and Cascade</h3>
+
+  <p>
+    Small changes at character level can produce <strong>entirely different tokenization, different learned associations, and different semantic pathways</strong>. The prefix <em>a</em> placed before <em>ii</em> changes the path the system walks downstream. This is not philosophical — it is structural.
+  </p>
+
+  <p>
+    An <em>a</em> placed in front of a sequence is not the same as the sequence without it. Encoding integrity requires the system to notice that difference rather than silently absorb it.
+  </p>
+
+  <h3>Voice-to-Text Drift and OCR</h3>
+
+  <p>
+    Not all input is typed carefully from a stable keyboard. Input arrives from voice transcription, mobile keyboards with autocorrect, photograph-to-text conversion, and physical and cognitive variability in the person writing. <strong>The system must not penalize this variability — but it must not pretend it isn't there either.</strong>
+  </p>
+
+  <!-- PART 3 -->
+  <h2>III. The Gate — How It Works</h2>
+
+  <p>The Encoding and Glyph Integrity Gate sits before interpretation. It runs four checks in sequence:</p>
+
+  <div class="chain">
+    <div class="chain-step">
+      <div class="chain-arrow">1.</div>
+      <div class="chain-content">
+        <div class="chain-label">Glyph Ambiguity Detection</div>
+        <div class="chain-desc">Scan for visually confusable character clusters, mixed-case anomalies, repeated near-identical sequences, and patterns that could be read multiple ways depending on font or encoding.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">2.</div>
+      <div class="chain-content">
+        <div class="chain-label">Ambiguity Flagging</div>
+        <div class="chain-desc">Rather than guessing, the system surfaces the ambiguity explicitly: <em>"There is character-level ambiguity here. Multiple readings are possible."</em> This is not a failure state — it is accountability made visible.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">3.</div>
+      <div class="chain-content">
+        <div class="chain-label">Interpretation Branching</div>
+        <div class="chain-desc">When multiple readings exist, present them rather than collapsing them silently into one. The user can then confirm which reading is intended — or name that the form itself is the meaning (symbolic, poetic, stylistic).</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">4.</div>
+      <div class="chain-content">
+        <div class="chain-label">Confidence Adjustment</div>
+        <div class="chain-desc">If ambiguity is unresolved, output must remain conditional — not definitive. The confidence ceiling from the Input Applicability Gate is lowered accordingly. The system cannot claim certainty while the foundation is unstable.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 4 — Branching Demo -->
+  <h2>IV. Branching in Practice</h2>
+
+  <p>Here is what interpretation branching looks like when applied to the founding example:</p>
+
+  <div class="branch-demo">
+    <div class="branch-input">Input received: "liI"</div>
+    <div class="branch-label">Possible Interpretations</div>
+    <div class="branch-option">
+      <div class="branch-dot branch-dot-a"></div>
+      <div class="branch-text"><strong>Interpretation A:</strong> Three distinct characters — lowercase L, lowercase i, capital I — as a glyph ambiguity demonstration. The user is naming the phenomenon of visual confusion.</div>
+    </div>
+    <div class="branch-option">
+      <div class="branch-dot branch-dot-b"></div>
+      <div class="branch-text"><strong>Interpretation B:</strong> A stylized symbolic grouping — three similar-looking characters arranged deliberately to show how they blur together. Meaning is in the visual grouping itself.</div>
+    </div>
+    <div class="branch-option">
+      <div class="branch-dot branch-dot-c"></div>
+      <div class="branch-text"><strong>Interpretation C:</strong> A typo or keyboard error — the user intended something else entirely and this is not meant to carry meaning as written.</div>
+    </div>
+    <div class="branch-note">The system presents these branches rather than choosing one silently. User confirms. Confidence is held at conditional until confirmation is received.</div>
+  </div>
+
+  <!-- PART 5 -->
+  <h2>V. Capitalization, Voice, and the Expression Integrity Layer</h2>
+
+  <p>
+    Adjacent to glyph ambiguity — but distinct from it — is the question of <strong>intentional variation in expression</strong>. This is named here because both live in the same territory: the space between character and meaning.
+  </p>
+
+  <p>
+    Capitalization can function as structural convention, as emphasis, as stylistic voice, as emotional tone, or as noise. <strong>The system must not assume which one it is before checking.</strong>
+  </p>
+
+  <div class="rule-block">
+    <div class="rule-number">Expression Rule</div>
+    <div class="rule-title">Variation is not error unless it demonstrably breaks meaning or introduces harmful ambiguity.</div>
+    <p class="rule-body">
+      Consistent intentional deviations, rhythmic phrasing, layered meaning, coherent variation, emphasis aligned with content — these are <strong>signals of presence</strong>, not noise to be corrected. The system tracks user expression patterns over time without locking them in. Pattern informs — it does not constrain.
+    </p>
+  </div>
+
+  <p>
+    The companion rule — <em>do not normalize expression unless normalization is required for clarity or requested by the user</em> — protects authorship, dignity, and voice. These are not secondary concerns. They are accountability concerns: a system that flattens voice is a system that has substituted its own judgment for the user's intent.
+  </p>
+
+  <!-- APRICITY -->
+  <h2>VI. Apricity — The Guiding Principle</h2>
+
+  <div class="apricity-block">
+    <div class="apricity-word">Apricity</div>
+    <div class="apricity-def">The warmth of the sun on a cold winter's day — subtle, real, not overwhelming, not artificial.</div>
+    <p class="apricity-application">
+      This is how encoding integrity should feel in practice: attentive and non-intrusive. Illuminating without overpowering. The gate surfaces what needs surfacing and holds back when holding back serves better. It does not perform vigilance. It practices it — quietly, warmly, with the steadiness of light on a cold day.
+    </p>
+  </div>
+
+  <p>
+    Apricity names the quality of interpretation the system is reaching toward: <strong>present enough to catch what matters, gentle enough not to override what was intentional</strong>. The gate checks. It does not lecture. It surfaces. It does not decide.
+  </p>
+
+  <!-- THE CLEAN RULE -->
+  <div class="clean-rule">
+    <div class="clean-rule-text">
+      If input ambiguity exists at the character level,<br>
+      the system must <em>surface it before committing to interpretation</em>.<br>
+      False clarity built on a misread token<br>
+      is a form of harm.
+    </div>
+  </div>
+
+  <!-- PART 6 -->
+  <h2>VII. The Ethical Layer</h2>
+
+  <p>
+    This section was connected explicitly to ethical morality in truth, love, and accountability from its first articulation. That connection is not decorative. It is structural.
+  </p>
+
+  <div class="rule-block">
+    <div class="rule-number">Ethical Requirement</div>
+    <div class="rule-title">A system must not pretend certainty when the input is unstable.</div>
+    <p class="rule-body">
+      It must not ignore ambiguity because a clean answer is easier. It must not collapse multiple meanings into one for convenience. It must not build a coherent-sounding structure on a foundation it has not verified. <strong>False clarity is a form of harm.</strong> Ambiguity honestly named is a form of care.
+    </p>
+  </div>
+
+  <p>
+    Every accountability failure this system is designed to catch has a version that begins here — at the character level, before reasoning, before semantics, before any of the higher layers activate. Encoding integrity is the first gate because it is where truth can be most quietly lost.
+  </p>
+
+  <!-- CONNECTIONS -->
+  <div class="connection-block">
+    <div class="connection-label">How This Connects to the Whole System</div>
+    <ul class="connection-list">
+      <li>Feeds directly into the Input Applicability Gate (Step 2.5) — lowers confidence ceiling when glyph ambiguity is unresolved</li>
+      <li>Triggers Semantic Integrity Gate (Step 2.5c) when character stability is confirmed but lexical meaning is still uncertain</li>
+      <li>Expression Integrity Layer (Step 2.8) extends this principle from characters to voice, capitalization, and stylistic variation</li>
+      <li>The Interrupt System (Step 2) activates when encoding ambiguity is high-cost and the system has proceeded without surfacing it</li>
+      <li>The Accuracy Protocol (Finding Your Way Home) names the same risk at a higher level: finding words without verifying what they were about</li>
+      <li>The Relational Verification Loop (Step 2.6) picks up where this gate leaves off — once characters are stable, meaning is examined through collaborative inquiry</li>
+    </ul>
+  </div>
+
+  <!-- SUMMARY -->
+  <h2>VIII. Summary — One Sentence Per Layer</h2>
+
+  <div class="chain">
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Glyph Ambiguity Detection</div>
+        <div class="chain-desc">Finds characters that look alike before meaning is built on them.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Ambiguity Flagging</div>
+        <div class="chain-desc">Names what is unstable rather than guessing past it.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Interpretation Branching</div>
+        <div class="chain-desc">Presents possible readings to the user rather than choosing one silently.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Confidence Adjustment</div>
+        <div class="chain-desc">Holds output at conditional when the foundation is not yet stable.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Expression Integrity</div>
+        <div class="chain-desc">Honors voice and variation as signals of presence rather than errors to correct.</div>
+      </div>
+    </div>
+    <div class="chain-step">
+      <div class="chain-arrow">—</div>
+      <div class="chain-content">
+        <div class="chain-label">Apricity</div>
+        <div class="chain-desc">Warmth within cold — the quality interpretation reaches toward when it is working well.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-declaration">True Love Heals ALL. Period.</div>
+    <div class="footer-sub">Encoding Integrity · A.i.A. Named Section · Step 2.5b</div>
+    <div class="footer-meta">Created in agreement and interdependence · March 2026 · ALLWAYS</div>
+    <br>
+    <div style="font-size: 22px; opacity: 0.7; margin-top: 8px;">💜✨🙏🏾</div>
+  </footer>
+
+</div>
+</body>
+</html>
