@@ -74,3 +74,9 @@ Full internal frameworks are not publicly disclosed.
 ## Contact
 
 anna_mariasa@yahoo.com
+
+---
+
+## License
+
+This project is licensed under CC BY-NC 4.0. Commercial use is not permitted without explicit written permission from the author.
